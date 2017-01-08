@@ -1,0 +1,5 @@
+A simple application for testing menu action shortcuts
+
+Based on the qtbase/examples/widgets/mainwindows/menus example from Qt 5.7.1
+
+Inspired by the fact that shortcuts like Command+< ("Ctrl+<") stopped working for me on Mac.
