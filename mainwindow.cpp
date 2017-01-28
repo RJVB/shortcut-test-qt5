@@ -49,6 +49,7 @@
 ****************************************************************************/
 
 #include <QApplication>
+#include <QGuiApplication>
 #include <QtWidgets>
 #include <QLabel>
 #include <QMenu>
@@ -71,6 +72,7 @@ MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBa
 {
 #ifdef Q_OS_MACOS
     if (!nativeMenuBar) {
+        qWarning() << Q_FUNC_INFO << "menuBar" << menuBar() << "native=" << menuBar()->isNativeMenuBar();
         QMenuBar *mB = new QMenuBar(this);
         mB->setNativeMenuBar(false);
         mB->setVisible(true);
@@ -78,6 +80,7 @@ MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBa
         setMenuBar(mB);
     }
     qWarning() << Q_FUNC_INFO << "menuBar" << menuBar() << "native=" << menuBar()->isNativeMenuBar();
+    qWarning() << "\tplatformName=" << QGuiApplication::platformName();
 #endif
 
     QWidget *widget = new QWidget;
