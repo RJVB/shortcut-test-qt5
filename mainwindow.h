@@ -72,6 +72,7 @@ protected:
 #ifndef QT_NO_CONTEXTMENU
     void contextMenuEvent(QContextMenuEvent *event) Q_DECL_OVERRIDE;
 #endif // QT_NO_CONTEXTMENU
+    void mousePressEvent(QMouseEvent *e);
 //! [0]
 
 //! [1]
@@ -96,6 +97,7 @@ private slots:
     void about();
     void aboutQt();
     void shortCutActHandler();
+    void aboutToShowContextMenu();
 //! [1]
 
 //! [2]

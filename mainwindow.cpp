@@ -121,6 +121,7 @@ MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBa
 #ifndef QT_NO_CONTEXTMENU
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 {
+    qWarning() << Q_FUNC_INFO << event << "reason=" << event->reason();
     QMenu menu(this);
     menu.addAction(cutAct);
     menu.addAction(copyAct);
@@ -130,9 +131,42 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
         menu.addAction(shortCutAct);
         addAction(shortCutAct);
     }
+    connect(&menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowContextMenu()));
     menu.exec(event->globalPos());
+    disconnect(&menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowContextMenu()));
 }
 #endif // QT_NO_CONTEXTMENU
+
+void MainWindow::aboutToShowContextMenu()
+{
+#ifndef QT_NO_CONTEXTMENU
+    QMenu *menu = qobject_cast<QMenu *>(sender());
+
+    if (menu) {
+        qWarning() << Q_FUNC_INFO << "About to show" << menu;
+        QAction *extraAct = new QAction(tr("&Quit"), this);
+        extraAct->setStatusTip(tr("Exit the application"));
+        connect(extraAct, &QAction::triggered, this, &QWidget::close);
+        menu->addAction(extraAct);
+    }
+#endif
+}
+
+// do as KTextEditor does
+void MainWindow::mousePressEvent(QMouseEvent *e)
+{
+    switch (e->button()) {
+        case Qt::LeftButton:
+            e->accept();
+            qWarning() << Q_FUNC_INFO << "event" << e << "accepted";
+            break;
+        default:
+            e->ignore();
+            qWarning() << Q_FUNC_INFO << "event" << e << "ignored";
+            break;
+    }
+}
+
 //! [3]
 
 void MainWindow::newFile()
