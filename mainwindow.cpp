@@ -122,18 +122,7 @@ MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBa
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 {
     qWarning() << Q_FUNC_INFO << event << "reason=" << event->reason();
-    QMenu menu(this);
-    menu.addAction(cutAct);
-    menu.addAction(copyAct);
-    menu.addAction(pasteAct);
-    if (m_shortCutActFlags & 2) {
-        menu.addSeparator();
-        menu.addAction(shortCutAct);
-        addAction(shortCutAct);
-    }
-    connect(&menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowContextMenu()));
-    menu.exec(event->globalPos());
-    disconnect(&menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowContextMenu()));
+    contextMenu->exec(event->globalPos());
 }
 #endif // QT_NO_CONTEXTMENU
 
@@ -407,6 +396,18 @@ void MainWindow::createActions()
     alignmentGroup->addAction(centerAct);
     leftAlignAct->setChecked(true);
 //! [6]
+#ifndef QT_NO_CONTEXTMENU
+    contextMenu = new QMenu(this);
+    contextMenu->addAction(cutAct);
+    contextMenu->addAction(copyAct);
+    contextMenu->addAction(pasteAct);
+    if (m_shortCutActFlags & 2) {
+        contextMenu->addSeparator();
+        contextMenu->addAction(shortCutAct);
+        addAction(shortCutAct);
+    }
+    connect(contextMenu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowContextMenu()));
+#endif
 }
 //! [7]
 

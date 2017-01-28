@@ -1,5 +1,5 @@
 QT += widgets gui core
-CONFIG -= app_bundle
+# CONFIG -= app_bundle
 
 HEADERS       = mainwindow.h
 SOURCES       = mainwindow.cpp \

@@ -111,6 +111,7 @@ private:
     QMenu *editMenu;
     QMenu *formatMenu;
     QMenu *helpMenu;
+    QMenu *contextMenu;
     QActionGroup *alignmentGroup;
     QAction *newAct;
     QAction *openAct;
