@@ -86,6 +86,8 @@ int main(int argc, char *argv[])
         qWarning() << "Using non-native menubar";
         QCoreApplication::setAttribute(Qt::AA_DontUseNativeMenuBar);
         nativeMenuBar = false;
+    } else {
+        QCoreApplication::setAttribute(Qt::AA_DontUseNativeMenuBar, false);
     }
     if (commandLineParser.isSet(shortCutTestNoMenu)) {
         shortCutActFlags &= ~1;

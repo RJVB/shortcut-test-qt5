@@ -81,6 +81,7 @@ MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBa
     }
     qWarning() << Q_FUNC_INFO << "menuBar" << menuBar() << "native=" << menuBar()->isNativeMenuBar();
     qWarning() << "\tplatformName=" << QGuiApplication::platformName();
+    qWarning() << "\tQt::AA_MacDontSwapCtrlAndMeta=" << QCoreApplication::testAttribute(Qt::AA_MacDontSwapCtrlAndMeta);;
 #endif
 
     QWidget *widget = new QWidget;
@@ -125,7 +126,10 @@ MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBa
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 {
     qWarning() << Q_FUNC_INFO << event << "reason=" << event->reason();
-    contextMenu->exec(event->globalPos());
+    QMenu *menu = new QMenu(this);
+    menu->addActions(contextMenu->actions());
+    connect(menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowContextMenu()));
+    menu->exec(event->globalPos());
 }
 #endif // QT_NO_CONTEXTMENU
 

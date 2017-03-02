@@ -18,6 +18,9 @@ Additional Options=--nice 10 -w V=1 VERBOSE=1
 Default Make Environment Profile=KDE/MacPorts
 Make Binary=wmake
 
+[Project]
+VersionControlSupport=kdevgit
+
 [QMake_Builder]
 Build_Folder=/Volumes/Debian/Users/bertin/work/src/new/Qt/menus-qt5/build
 Build_Type=2
