@@ -81,7 +81,7 @@ MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBa
     }
     qWarning() << Q_FUNC_INFO << "menuBar" << menuBar() << "native=" << menuBar()->isNativeMenuBar();
     qWarning() << "\tplatformName=" << QGuiApplication::platformName();
-    qWarning() << "\tQt::AA_MacDontSwapCtrlAndMeta=" << QCoreApplication::testAttribute(Qt::AA_MacDontSwapCtrlAndMeta);;
+    qWarning() << "\tQt::AA_MacDontSwapCtrlAndMeta=" << qApp->testAttribute(Qt::AA_MacDontSwapCtrlAndMeta);;
 #endif
 
     QWidget *widget = new QWidget;
@@ -405,6 +405,7 @@ void MainWindow::createActions()
 //! [6]
 #ifndef QT_NO_CONTEXTMENU
     contextMenu = new QMenu(this);
+    contextMenu->addSection(tr("Context Menu"));
     contextMenu->addAction(cutAct);
     contextMenu->addAction(copyAct);
     contextMenu->addAction(pasteAct);
@@ -423,6 +424,7 @@ void MainWindow::createMenus()
 {
 //! [9] //! [10]
     fileMenu = menuBar()->addMenu(tr("&File"));
+    fileMenu->addSection(tr("File Actions"));
     fileMenu->addAction(newAct);
 //! [9]
     fileMenu->addAction(openAct);
@@ -435,6 +437,7 @@ void MainWindow::createMenus()
     fileMenu->addAction(exitAct);
 
     editMenu = menuBar()->addMenu(tr("&Edit"));
+    editMenu->addSection(tr("Edit Actions"));
     editMenu->addAction(undoAct);
     editMenu->addAction(redoAct);
     editMenu->addSeparator();
@@ -444,6 +447,7 @@ void MainWindow::createMenus()
     editMenu->addSeparator();
 
     helpMenu = menuBar()->addMenu(tr("&Help"));
+    helpMenu->addSection(tr("Self Service"));
     if (m_shortCutActFlags & 1) {
         helpMenu->addAction(shortCutAct);
         helpMenu->addSeparator();
@@ -454,6 +458,7 @@ void MainWindow::createMenus()
 
 //! [12]
     formatMenu = editMenu->addMenu(tr("&Format"));
+    formatMenu->addSection(tr("Layout"));
     formatMenu->addAction(boldAct);
     formatMenu->addAction(italicAct);
     formatMenu->addSeparator()->setText(tr("Alignment"));
