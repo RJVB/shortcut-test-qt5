@@ -454,7 +454,7 @@ void MainWindow::createActions()
 //! [6]
 #ifndef QT_NO_CONTEXTMENU
     contextMenu = new QMenu(tr("Static contextMenu"), this);
-    contextMenu->addSection(tr("Context Menu"));
+    contextMenu->addSection(tr("Context Menu"))->setStatusTip(tr("this is a menu section"));
     contextMenu->addAction(cutAct);
     contextMenu->addAction(copyAct);
     contextMenu->addAction(pasteAct);
@@ -488,7 +488,7 @@ void MainWindow::createMenus()
     bool isMB = isMenubarMenu(fileMenu);
     qWarning() << Q_FUNC_INFO << "fileMenu" << fileMenu << "isNativeMenubarMenu=" << isMB;
 
-    fileMenu->addSection(tr("File Actions"));
+    fileMenu->addSection(tr("File Actions"))->setStatusTip(tr("this is a menu section"));
     fileMenu->addAction(newAct);
 //! [9]
     fileMenu->addAction(openAct);
@@ -501,7 +501,7 @@ void MainWindow::createMenus()
     fileMenu->addAction(exitAct);
 
     editMenu = addMenu(tr("&Edit"));
-    editMenu->addSection(tr("Edit Actions"));
+    editMenu->addSection(tr("Edit Actions"))->setStatusTip(tr("this is a menu section"));
     editMenu->addAction(undoAct);
     editMenu->addAction(redoAct);
     editMenu->addSeparator();
@@ -511,7 +511,7 @@ void MainWindow::createMenus()
     editMenu->addSeparator();
 
     helpMenu = addMenu(tr("&Help"));
-    helpMenu->addSection(tr("Self Service"));
+    helpMenu->addSection(tr("Self Service"))->setStatusTip(tr("this is a menu section"));
     if (m_shortCutActFlags & 1) {
         helpMenu->addAction(shortCutAct);
         helpMenu->addSeparator();
@@ -522,7 +522,7 @@ void MainWindow::createMenus()
 
 //! [12]
     formatMenu = addMenu(tr("&Format"), editMenu);
-    formatMenu->addSection(tr("Layout"));
+    formatMenu->addSection(tr("Layout"))->setStatusTip(tr("this is a menu section"));
     formatMenu->addAction(boldAct);
     formatMenu->addAction(italicAct);
     formatMenu->addSeparator()->setText(tr("Alignment"));
