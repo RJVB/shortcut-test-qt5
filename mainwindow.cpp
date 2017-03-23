@@ -64,25 +64,25 @@
 
 #include "mainwindow.h"
 
-static bool isMenubarMenu(QMenu *m, bool checkIsNative=true)
+static bool isMenubarMenu(const QMenu *m, bool checkIsNative=true)
 {   bool ret = false;
         static int level = -1;
-    QSet<QMenu*> checkList;
+    QSet<const QMenu*> checkList;
     level += 1;
     if (m && m->menuAction()) {
         QAction *mAct = m->menuAction();
         qWarning() << "##" << level << "isMenubarMenu(" << m << m->title() << ") menuAction=" << mAct << mAct->text();
-        foreach (QWidget *w, mAct->associatedWidgets()) {
+        foreach (const QWidget *w, mAct->associatedWidgets()) {
             if (w == m) {
                 goto done;
             }
             qWarning() << "###" << level << "associated widget" << w << w->windowTitle() << "parent=" << w->parentWidget();
-            if (QMenuBar *mb = qobject_cast<QMenuBar*>(w)) {
+            if (const QMenuBar *mb = qobject_cast<const QMenuBar*>(w)) {
                 qWarning() << "#### widget is QMenuBar" << mb << mb->windowTitle() << "with parent" << mb->parentWidget();
                 ret = checkIsNative? mb->isNativeMenuBar() : true;
                 goto done;
             }
-            else if (QMenu *mm = qobject_cast<QMenu*>(w)) {
+            else if (const QMenu *mm = qobject_cast<const QMenu*>(w)) {
                 if (checkList.contains(mm)) {
                     continue;
                 }
