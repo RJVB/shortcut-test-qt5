@@ -64,10 +64,10 @@
 
 #include "mainwindow.h"
 
-static bool isMenubarMenu(QMenu *m)
+static bool isMenubarMenu(QMenu *m, bool checkIsNative=true)
 {   bool ret = false;
         static int level = -1;
-    QList<QMenu*> checkList;
+    QSet<QMenu*> checkList;
     level += 1;
     if (m && m->menuAction()) {
         QAction *mAct = m->menuAction();
@@ -79,16 +79,16 @@ static bool isMenubarMenu(QMenu *m)
             qWarning() << "###" << level << "associated widget" << w << w->windowTitle() << "parent=" << w->parentWidget();
             if (QMenuBar *mb = qobject_cast<QMenuBar*>(w)) {
                 qWarning() << "#### widget is QMenuBar" << mb << mb->windowTitle() << "with parent" << mb->parentWidget();
-                ret = true;
+                ret = checkIsNative? mb->isNativeMenuBar() : true;
                 goto done;
             }
             else if (QMenu *mm = qobject_cast<QMenu*>(w)) {
                 if (checkList.contains(mm)) {
                     continue;
                 }
-                checkList.append(mm);
+                checkList += mm;
                 qWarning() << "####" << level << "widget is QMenu" << mm << mm->title() << "with parent" << mm->parentWidget();
-                if (isMenubarMenu(mm)) {
+                if (isMenubarMenu(mm, checkIsNative)) {
                     ret = true;
                     goto done;
                 }
@@ -166,7 +166,7 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
     menu->addActions(contextMenu->actions());
     connect(menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowContextMenu()));
     bool isMB = isMenubarMenu(menu);
-    qWarning() << "\tcreated menu" << menu << "isMenubarMenu=" << isMB;
+    qWarning() << "\tcreated menu" << menu << "isNativeMenubarMenu=" << isMB;
     menu->exec(event->globalPos());
 }
 #endif // QT_NO_CONTEXTMENU
@@ -178,7 +178,7 @@ void MainWindow::aboutToShowContextMenu()
 
     if (menu) {
         bool isMB = isMenubarMenu(menu);
-        qWarning() << Q_FUNC_INFO << "About to show" << menu << "isMenubarMenu=" << isMB;
+        qWarning() << Q_FUNC_INFO << "About to show" << menu << "isNativeMenubarMenu=" << isMB;
         QAction *extraAct = new QAction(tr("&Quit"), this);
         extraAct->setStatusTip(tr("Exit the application"));
         connect(extraAct, &QAction::triggered, this, &QWidget::close);
@@ -193,7 +193,7 @@ void MainWindow::aboutToShowMenu()
 
     if (menu) {
         bool isMB = isMenubarMenu(menu);
-        qWarning() << Q_FUNC_INFO << "About to show" << menu << "isMenubarMenu=" << isMB;
+        qWarning() << Q_FUNC_INFO << "About to show" << menu << "isNativeMenubarMenu=" << isMB;
     }
 }
 
@@ -486,7 +486,7 @@ void MainWindow::createMenus()
 //! [9] //! [10]
     fileMenu = addMenu(tr("&File"));
     bool isMB = isMenubarMenu(fileMenu);
-    qWarning() << Q_FUNC_INFO << "fileMenu" << fileMenu << "isMenubarMenu=" << isMB;
+    qWarning() << Q_FUNC_INFO << "fileMenu" << fileMenu << "isNativeMenubarMenu=" << isMB;
 
     fileMenu->addSection(tr("File Actions"));
     fileMenu->addAction(newAct);
