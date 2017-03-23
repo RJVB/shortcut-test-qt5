@@ -98,11 +98,13 @@ private slots:
     void aboutQt();
     void shortCutActHandler();
     void aboutToShowContextMenu();
+    void aboutToShowMenu();
 //! [1]
 
 //! [2]
 private:
     void createActions();
+    QMenu *addMenu(const QString &title, QMenu *target=nullptr);
     void createMenus();
 //! [2]
 

@@ -64,6 +64,42 @@
 
 #include "mainwindow.h"
 
+static bool isMenubarMenu(QMenu *m)
+{   bool ret = false;
+        static int level = -1;
+    QList<QMenu*> checkList;
+    level += 1;
+    if (m && m->menuAction()) {
+        QAction *mAct = m->menuAction();
+        qWarning() << "##" << level << "isMenubarMenu(" << m << m->title() << ") menuAction=" << mAct << mAct->text();
+        foreach (QWidget *w, mAct->associatedWidgets()) {
+            if (w == m) {
+                goto done;
+            }
+            qWarning() << "###" << level << "associated widget" << w << w->windowTitle() << "parent=" << w->parentWidget();
+            if (QMenuBar *mb = qobject_cast<QMenuBar*>(w)) {
+                qWarning() << "#### widget is QMenuBar" << mb << mb->windowTitle() << "with parent" << mb->parentWidget();
+                ret = true;
+                goto done;
+            }
+            else if (QMenu *mm = qobject_cast<QMenu*>(w)) {
+                if (checkList.contains(mm)) {
+                    continue;
+                }
+                checkList.append(mm);
+                qWarning() << "####" << level << "widget is QMenu" << mm << mm->title() << "with parent" << mm->parentWidget();
+                if (isMenubarMenu(mm)) {
+                    ret = true;
+                    goto done;
+                }
+            }
+        }
+    }
+done:;
+    level -= 1;
+    return ret;
+}
+
 //! [0]
 MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBar)
     : m_nativeMenuBar(nativeMenuBar)
@@ -126,9 +162,11 @@ MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBa
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 {
     qWarning() << Q_FUNC_INFO << event << "reason=" << event->reason();
-    QMenu *menu = new QMenu(this);
+    QMenu *menu = new QMenu(tr("Dynamic contextMenu"), this);
     menu->addActions(contextMenu->actions());
     connect(menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowContextMenu()));
+    bool isMB = isMenubarMenu(menu);
+    qWarning() << "\tcreated menu" << menu << "isMenubarMenu=" << isMB;
     menu->exec(event->globalPos());
 }
 #endif // QT_NO_CONTEXTMENU
@@ -139,13 +177,24 @@ void MainWindow::aboutToShowContextMenu()
     QMenu *menu = qobject_cast<QMenu *>(sender());
 
     if (menu) {
-        qWarning() << Q_FUNC_INFO << "About to show" << menu;
+        bool isMB = isMenubarMenu(menu);
+        qWarning() << Q_FUNC_INFO << "About to show" << menu << "isMenubarMenu=" << isMB;
         QAction *extraAct = new QAction(tr("&Quit"), this);
         extraAct->setStatusTip(tr("Exit the application"));
         connect(extraAct, &QAction::triggered, this, &QWidget::close);
         menu->addAction(extraAct);
     }
 #endif
+}
+
+void MainWindow::aboutToShowMenu()
+{
+    QMenu *menu = qobject_cast<QMenu *>(sender());
+
+    if (menu) {
+        bool isMB = isMenubarMenu(menu);
+        qWarning() << Q_FUNC_INFO << "About to show" << menu << "isMenubarMenu=" << isMB;
+    }
 }
 
 // do as KTextEditor does
@@ -404,7 +453,7 @@ void MainWindow::createActions()
     leftAlignAct->setChecked(true);
 //! [6]
 #ifndef QT_NO_CONTEXTMENU
-    contextMenu = new QMenu(this);
+    contextMenu = new QMenu(tr("Static contextMenu"), this);
     contextMenu->addSection(tr("Context Menu"));
     contextMenu->addAction(cutAct);
     contextMenu->addAction(copyAct);
@@ -419,11 +468,26 @@ void MainWindow::createActions()
 }
 //! [7]
 
+QMenu *MainWindow::addMenu(const QString &title, QMenu *target)
+{
+    QMenu *menu;
+    if (target) {
+        menu = target->addMenu(title);
+    } else {
+        menu = menuBar()->addMenu(title);
+    }
+    connect(menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowMenu()));
+    return menu;
+}
+
 //! [8]
 void MainWindow::createMenus()
 {
 //! [9] //! [10]
-    fileMenu = menuBar()->addMenu(tr("&File"));
+    fileMenu = addMenu(tr("&File"));
+    bool isMB = isMenubarMenu(fileMenu);
+    qWarning() << Q_FUNC_INFO << "fileMenu" << fileMenu << "isMenubarMenu=" << isMB;
+
     fileMenu->addSection(tr("File Actions"));
     fileMenu->addAction(newAct);
 //! [9]
@@ -436,7 +500,7 @@ void MainWindow::createMenus()
 //! [11]
     fileMenu->addAction(exitAct);
 
-    editMenu = menuBar()->addMenu(tr("&Edit"));
+    editMenu = addMenu(tr("&Edit"));
     editMenu->addSection(tr("Edit Actions"));
     editMenu->addAction(undoAct);
     editMenu->addAction(redoAct);
@@ -446,7 +510,7 @@ void MainWindow::createMenus()
     editMenu->addAction(pasteAct);
     editMenu->addSeparator();
 
-    helpMenu = menuBar()->addMenu(tr("&Help"));
+    helpMenu = addMenu(tr("&Help"));
     helpMenu->addSection(tr("Self Service"));
     if (m_shortCutActFlags & 1) {
         helpMenu->addAction(shortCutAct);
@@ -457,7 +521,7 @@ void MainWindow::createMenus()
 //! [8]
 
 //! [12]
-    formatMenu = editMenu->addMenu(tr("&Format"));
+    formatMenu = addMenu(tr("&Format"), editMenu);
     formatMenu->addSection(tr("Layout"));
     formatMenu->addAction(boldAct);
     formatMenu->addAction(italicAct);
