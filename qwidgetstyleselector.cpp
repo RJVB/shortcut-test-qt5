@@ -1,4 +1,4 @@
-/* This file is part of the KDE project
+/* This file was part of the KDE project
  * Copyright (C) 2016 René J.V. Bertin <rjvbertin@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -64,7 +64,7 @@ QWidgetStyleSelector::~QWidgetStyleSelector()
 {
 }
 
-QMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QIcon &icon, const QString &text,
+WidgetStyleMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QIcon &icon, const QString &text,
                                                             const QString &selectedStyleName, QWidget *parent)
 {
     // Taken from Kdenlive:
@@ -72,7 +72,7 @@ QMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QIcon &icon, const Q
     if (!parent) {
         parent = m_parent;
     }
-    QMenu *stylesAction= new QMenu(text, parent);
+    WidgetStyleMenu *stylesAction= new WidgetStyleMenu(text, parent);
     if (!icon.isNull()) {
         stylesAction->setIcon(icon);
     }
@@ -133,13 +133,13 @@ QMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QIcon &icon, const Q
     return stylesAction;
 }
 
-QMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QString &text,
+WidgetStyleMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QString &text,
                                                             const QString &selectedStyleName, QWidget *parent)
 {
     return createStyleSelectionMenu(QIcon(), text, selectedStyleName, parent);
 }
 
-QMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QString &selectedStyleName, QWidget *parent)
+WidgetStyleMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QString &selectedStyleName, QWidget *parent)
 {
     return createStyleSelectionMenu(QIcon(), tr("Style"), selectedStyleName, parent);
 }

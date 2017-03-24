@@ -1,4 +1,4 @@
-/* This file is part of the KDE project
+/* This file was part of the KDE project
  * Copyright (C) 2016 René J.V. Bertin <rjvbertin@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -21,7 +21,9 @@
 
 
 #include <QWidget>
-#include <QMenu>
+#include "qqmenu.h"
+
+using WidgetStyleMenu = QQMenu;
 
 class QString;
 class QIcon;
@@ -34,9 +36,9 @@ public:
     explicit QWidgetStyleSelector(QWidget *parent = 0);
     virtual ~QWidgetStyleSelector();
 
-    QMenu *createStyleSelectionMenu(const QIcon &icon, const QString &text, const QString &selectedStyleName=QString(), QWidget *parent=0);
-    QMenu *createStyleSelectionMenu(const QString &text, const QString &selectedStyleName=QString(), QWidget *parent=0);
-    QMenu *createStyleSelectionMenu(const QString &selectedStyleName=QString(), QWidget *parent=0);
+    WidgetStyleMenu *createStyleSelectionMenu(const QIcon &icon, const QString &text, const QString &selectedStyleName=QString(), QWidget *parent=0);
+    WidgetStyleMenu *createStyleSelectionMenu(const QString &text, const QString &selectedStyleName=QString(), QWidget *parent=0);
+    WidgetStyleMenu *createStyleSelectionMenu(const QString &selectedStyleName=QString(), QWidget *parent=0);
 
     QString currentStyle() const;
 

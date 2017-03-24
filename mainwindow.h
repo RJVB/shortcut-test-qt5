@@ -52,13 +52,14 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "qqmenu.h"
 #include "qwidgetstyleselector.h"
 
 QT_BEGIN_NAMESPACE
 class QAction;
 class QActionGroup;
 class QLabel;
-class QMenu;
+class QString;
 QT_END_NAMESPACE
 
 //! [0]
@@ -105,17 +106,17 @@ private slots:
 //! [2]
 private:
     void createActions();
-    void addMenu(QMenu *menu, QMenu *target=nullptr);
-    QMenu *addMenu(const QString &title, QMenu *target=nullptr);
+    void addMenu(QQMenu *menu, QQMenu *target=nullptr);
+    QQMenu *addMenu(const QString &title, QQMenu *target=nullptr);
     void createMenus();
 //! [2]
 
 //! [3]
-    QMenu *fileMenu;
-    QMenu *editMenu;
-    QMenu *formatMenu;
-    QMenu *helpMenu;
-    QMenu *contextMenu;
+    QQMenu *fileMenu;
+    QQMenu *editMenu;
+    QQMenu *formatMenu;
+    QQMenu *helpMenu;
+    QQMenu *contextMenu;
     QActionGroup *alignmentGroup;
     QAction *newAct;
     QAction *openAct;

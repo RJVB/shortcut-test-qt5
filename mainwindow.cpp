@@ -163,7 +163,7 @@ MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBa
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 {
     qWarning() << Q_FUNC_INFO << event << "reason=" << event->reason();
-    QMenu *menu = new QMenu(tr("Dynamic contextMenu"), this);
+    QQMenu *menu = new QQMenu(tr("Dynamic contextMenu"), this);
     menu->addActions(contextMenu->actions());
     connect(menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowContextMenu()));
     bool isMB = isMenubarMenu(menu);
@@ -175,7 +175,7 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 void MainWindow::aboutToShowContextMenu()
 {
 #ifndef QT_NO_CONTEXTMENU
-    QMenu *menu = qobject_cast<QMenu *>(sender());
+    QQMenu *menu = qobject_cast<QQMenu *>(sender());
 
     if (menu) {
         bool isMB = isMenubarMenu(menu);
@@ -190,7 +190,7 @@ void MainWindow::aboutToShowContextMenu()
 
 void MainWindow::aboutToShowMenu()
 {
-    QMenu *menu = qobject_cast<QMenu *>(sender());
+    QQMenu *menu = qobject_cast<QQMenu *>(sender());
 
     if (menu) {
         bool isMB = isMenubarMenu(menu);
@@ -454,7 +454,7 @@ void MainWindow::createActions()
     leftAlignAct->setChecked(true);
 //! [6]
 #ifndef QT_NO_CONTEXTMENU
-    contextMenu = new QMenu(tr("Static contextMenu"), this);
+    contextMenu = new QQMenu(tr("Static contextMenu"), this);
     contextMenu->addSection(tr("Context Menu"))->setStatusTip(tr("this is a menu section"));
     contextMenu->addAction(cutAct);
     contextMenu->addAction(copyAct);
@@ -469,24 +469,36 @@ void MainWindow::createActions()
 }
 //! [7]
 
-void MainWindow::addMenu(QMenu *menu, QMenu *target)
+void MainWindow::addMenu(QQMenu *menu, QQMenu *target)
 {
     if (target) {
         target->addMenu(menu);
     } else {
         menuBar()->addMenu(menu);
     }
+    QFont f = menu->font();
+    f.setBold(!f.bold());
+    menu->setFont(f);
+    f.setBold(!f.bold());
+    menu->setFont(f);
     connect(menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowMenu()));
 }
 
-QMenu *MainWindow::addMenu(const QString &title, QMenu *target)
+QQMenu *MainWindow::addMenu(const QString &title, QQMenu *target)
 {
-    QMenu *menu;
+    QQMenu *menu;
     if (target) {
-        menu = target->addMenu(title);
+        menu = new QQMenu(title, target);
+        target->addMenu(menu);
     } else {
-        menu = menuBar()->addMenu(title);
+        menu = new QQMenu(title, menuBar());
+        menuBar()->addMenu(menu);
     }
+    QFont f = menu->font();
+    f.setBold(!f.bold());
+    menu->setFont(f);
+    f.setBold(!f.bold());
+    menu->setFont(f);
     connect(menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowMenu()));
     return menu;
 }
@@ -499,7 +511,7 @@ void MainWindow::createMenus()
     bool isMB = isMenubarMenu(fileMenu);
     qWarning() << Q_FUNC_INFO << "fileMenu" << fileMenu << "isNativeMenubarMenu=" << isMB;
 
-    fileMenu->addSection(tr("File Actions"))->setStatusTip(tr("this is a menu section"));
+    fileMenu->addSection(tr("\u00A7 File Actions \u00A7"));
     fileMenu->addAction(newAct);
 //! [9]
     fileMenu->addAction(openAct);
@@ -507,12 +519,13 @@ void MainWindow::createMenus()
     fileMenu->addAction(saveAct);
     fileMenu->addAction(printAct);
 //! [11]
-    fileMenu->addSeparator();
+//     fileMenu->addSeparator();
+    fileMenu->addSection(tr("Danger"));
 //! [11]
     fileMenu->addAction(exitAct);
 
     editMenu = addMenu(tr("&Edit"));
-    editMenu->addSection(tr("Edit Actions"))->setStatusTip(tr("this is a menu section"));
+    editMenu->addSection(tr("Edit Actions"));
     editMenu->addAction(undoAct);
     editMenu->addAction(redoAct);
     editMenu->addSeparator();
@@ -522,7 +535,7 @@ void MainWindow::createMenus()
     editMenu->addSeparator();
 
     helpMenu = addMenu(tr("&Help"));
-    helpMenu->addSection(tr("Self Service"))->setStatusTip(tr("this is a menu section"));
+    helpMenu->addSection(tr("Self Service"));
     if (m_shortCutActFlags & 1) {
         helpMenu->addAction(shortCutAct);
         helpMenu->addSeparator();
@@ -533,7 +546,7 @@ void MainWindow::createMenus()
 
 //! [12]
     formatMenu = addMenu(tr("&Format"), editMenu);
-    formatMenu->addSection(tr("Layout"))->setStatusTip(tr("this is a menu section"));
+    formatMenu->addSection(tr("Layout"));
     formatMenu->addAction(boldAct);
     formatMenu->addAction(italicAct);
     formatMenu->addSeparator()->setText(tr("Alignment"));
