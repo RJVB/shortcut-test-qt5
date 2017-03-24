@@ -52,6 +52,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "qwidgetstyleselector.h"
 
 QT_BEGIN_NAMESPACE
 class QAction;
@@ -104,6 +105,7 @@ private slots:
 //! [2]
 private:
     void createActions();
+    void addMenu(QMenu *menu, QMenu *target=nullptr);
     QMenu *addMenu(const QString &title, QMenu *target=nullptr);
     void createMenus();
 //! [2]
@@ -140,6 +142,7 @@ private:
     const bool m_nativeMenuBar;
     const int m_shortCutActFlags;
     const QString m_shortCut;
+    QWidgetStyleSelector m_widgetStyleSelector;
 };
 //! [3]
 

@@ -1,8 +1,10 @@
 QT += widgets gui core
 # CONFIG -= app_bundle
 
-HEADERS       = mainwindow.h
+HEADERS       = mainwindow.h \
+                qwidgetstyleselector.h
 SOURCES       = mainwindow.cpp \
+                qwidgetstyleselector.cpp \
                 main.cpp
 
 # install

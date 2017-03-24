@@ -63,6 +63,7 @@
 #include <QDebug>
 
 #include "mainwindow.h"
+#include "qwidgetstyleselector.h"
 
 static bool isMenubarMenu(const QMenu *m, bool checkIsNative=true)
 {   bool ret = false;
@@ -468,6 +469,16 @@ void MainWindow::createActions()
 }
 //! [7]
 
+void MainWindow::addMenu(QMenu *menu, QMenu *target)
+{
+    if (target) {
+        target->addMenu(menu);
+    } else {
+        menuBar()->addMenu(menu);
+    }
+    connect(menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowMenu()));
+}
+
 QMenu *MainWindow::addMenu(const QString &title, QMenu *target)
 {
     QMenu *menu;
@@ -533,5 +544,6 @@ void MainWindow::createMenus()
     formatMenu->addSeparator();
     formatMenu->addAction(setLineSpacingAct);
     formatMenu->addAction(setParagraphSpacingAct);
+    addMenu( m_widgetStyleSelector.createStyleSelectionMenu(tr("Widget Style"), QString(), editMenu), editMenu);
 }
 //! [12]
