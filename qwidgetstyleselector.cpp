@@ -89,7 +89,7 @@ QMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QIcon &icon, const Q
     // without a settings store we can only treat the Default entry
     // as "select the default style for this platform".
     // (see also the defaultStyleAction->setData() call below.
-    defaultStyleAction->setStatusTip(tr("Default widget style for this platform"));
+    defaultStyleAction->setStatusTip(tr("Default widget style for this platform: %1").arg(getDefaultStyle()));
 
     stylesAction->addAction(defaultStyleAction);
     m_widgetStyle = selectedStyleName;
