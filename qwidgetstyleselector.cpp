@@ -76,6 +76,7 @@ QMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QIcon &icon, const Q
     if (!icon.isNull()) {
         stylesAction->setIcon(icon);
     }
+    stylesAction->setStatusTip(tr("Select the application widget style"));
     QActionGroup *stylesGroup = new QActionGroup(stylesAction);
 
     QStringList availableStyles = QStyleFactory::keys();
@@ -85,6 +86,11 @@ QMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QIcon &icon, const Q
     // Add default style action
     QAction *defaultStyleAction = new QAction(tr("Default"), stylesGroup);
     defaultStyleAction->setCheckable(true);
+    // without a settings store we can only treat the Default entry
+    // as "select the default style for this platform".
+    // (see also the defaultStyleAction->setData() call below.
+    defaultStyleAction->setStatusTip(tr("Default widget style for this platform"));
+
     stylesAction->addAction(defaultStyleAction);
     m_widgetStyle = selectedStyleName;
     bool setStyle = false;
@@ -107,6 +113,8 @@ QMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QIcon &icon, const Q
             QFont defFont = a->font();
             defFont.setBold(true);
             a->setFont(defFont);
+            a->setStatusTip(tr("Default widget style for this platform"));
+            defaultStyleAction->setData(style);
         }
         if (m_widgetStyle.compare(style, Qt::CaseInsensitive) == 0) {
             a->setChecked(true);
@@ -119,6 +127,7 @@ QMenu *QWidgetStyleSelector::createStyleSelectionMenu(const QIcon &icon, const Q
         stylesAction->addAction(a);
     }
     connect(stylesGroup, &QActionGroup::triggered, this, [&](QAction *a) {
+        qWarning() << Q_FUNC_INFO << a << "; activating style" << a->data();
         activateStyle(a->data().toString());
     });
     return stylesAction;
