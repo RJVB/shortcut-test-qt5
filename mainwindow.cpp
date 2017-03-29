@@ -476,11 +476,13 @@ void MainWindow::addMenu(QQMenu *menu, QQMenu *target)
     } else {
         menuBar()->addMenu(menu);
     }
+#ifdef SET_MENUFONT
     QFont f = menu->font();
     f.setBold(!f.bold());
     menu->setFont(f);
     f.setBold(!f.bold());
     menu->setFont(f);
+#endif
     connect(menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowMenu()));
 }
 
@@ -494,11 +496,13 @@ QQMenu *MainWindow::addMenu(const QString &title, QQMenu *target)
         menu = new QQMenu(title, menuBar());
         menuBar()->addMenu(menu);
     }
+#ifdef SET_MENUFONT
     QFont f = menu->font();
     f.setBold(!f.bold());
     menu->setFont(f);
     f.setBold(!f.bold());
     menu->setFont(f);
+#endif
     connect(menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowMenu()));
     return menu;
 }
@@ -506,6 +510,7 @@ QQMenu *MainWindow::addMenu(const QString &title, QQMenu *target)
 //! [8]
 void MainWindow::createMenus()
 {
+    QAction *action;
 //! [9] //! [10]
     fileMenu = addMenu(tr("&File"));
     bool isMB = isMenubarMenu(fileMenu);
@@ -540,6 +545,10 @@ void MainWindow::createMenus()
         helpMenu->addAction(shortCutAct);
         helpMenu->addSeparator();
     }
+    action = new QAction(tr("An inactive item"), this);
+    action->setDisabled(true);
+    helpMenu->addAction(action);
+
     helpMenu->addAction(aboutAct);
     helpMenu->addAction(aboutQtAct);
 //! [8]
@@ -549,7 +558,9 @@ void MainWindow::createMenus()
     formatMenu->addSection(tr("Layout"));
     formatMenu->addAction(boldAct);
     formatMenu->addAction(italicAct);
+
     formatMenu->addSeparator()->setText(tr("Alignment"));
+
     formatMenu->addAction(leftAlignAct);
     formatMenu->addAction(rightAlignAct);
     formatMenu->addAction(justifyAct);
@@ -557,6 +568,7 @@ void MainWindow::createMenus()
     formatMenu->addSeparator();
     formatMenu->addAction(setLineSpacingAct);
     formatMenu->addAction(setParagraphSpacingAct);
-    addMenu( m_widgetStyleSelector.createStyleSelectionMenu(tr("Widget Style"), QString(), editMenu), editMenu);
+    addMenu( m_widgetStyleSelector.createStyleSelectionMenu(
+        QIcon::fromTheme(QStringLiteral("preferences-desktop-theme")), tr("Widget Style"), QString(), editMenu), editMenu);
 }
 //! [12]
