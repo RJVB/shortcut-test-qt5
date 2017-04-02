@@ -164,6 +164,7 @@ void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 {
     qWarning() << Q_FUNC_INFO << event << "reason=" << event->reason();
     QQMenu *menu = new QQMenu(tr("Dynamic contextMenu"), this);
+    menu->setTearOffEnabled(true);
     menu->addActions(contextMenu->actions());
     connect(menu, SIGNAL(aboutToShow()), this, SLOT(aboutToShowContextMenu()));
     bool isMB = isMenubarMenu(menu);
@@ -555,6 +556,7 @@ void MainWindow::createMenus()
 
 //! [12]
     formatMenu = addMenu(tr("&Format"), editMenu);
+    formatMenu->setTearOffEnabled(true);
     formatMenu->addSection(tr("Layout"));
     formatMenu->addAction(boldAct);
     formatMenu->addAction(italicAct);
