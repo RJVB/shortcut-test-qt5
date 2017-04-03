@@ -6,6 +6,7 @@
 QQMenu::QQMenu(const QString &title, QWidget *parent)
     : QMenu(title, parent)
 {
+#ifdef SET_MENUFONT
     QFont f = font();
 //     qWarning() << Q_FUNC_INFO << "menu=" << title << "font=" << f;
     // force QAction::setFont() to reset the font so that menu items show
@@ -14,14 +15,15 @@ QQMenu::QQMenu(const QString &title, QWidget *parent)
     setFont(f);
     f.setBold(!f.bold());
     setFont(f);
+#endif
 }
 
 void QQMenu::addAction(QAction *action)
 {
     if (action) {
+#ifdef SET_MENUFONT
         QFont f = action->font();
 //         qWarning() << Q_FUNC_INFO << "item=" << action << "font=" << f;
-#ifdef SET_MENUFONT
         f.setBold(!f.bold());
         action->setFont(f);
         f.setBold(!f.bold());
@@ -34,9 +36,9 @@ void QQMenu::addAction(QAction *action)
 QAction *QQMenu::addSection(const QString &title)
 {
     QAction *section = QMenu::addSection(title);
+#ifdef SET_MENUFONT
     QFont f = section->font();
 //     qWarning() << Q_FUNC_INFO << "section=" << section << "font=" << f;
-#ifdef SET_MENUFONT
     f.setBold(!f.bold());
     section->setFont(f);
     f.setBold(!f.bold());
