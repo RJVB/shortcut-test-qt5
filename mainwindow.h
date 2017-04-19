@@ -94,6 +94,7 @@ private slots:
     void rightAlign();
     void justify();
     void center();
+    void toggleFullScreen();
     void setLineSpacing();
     void setParagraphSpacing();
     void about();
@@ -140,10 +141,14 @@ private:
     QAction *aboutQtAct;
     QAction *shortCutAct;
     QLabel *infoLabel;
+    QAction *fullScrAct;
     const bool m_nativeMenuBar;
     const int m_shortCutActFlags;
     const QString m_shortCut;
     QWidgetStyleSelector m_widgetStyleSelector;
+    Qt::WindowFlags m_normalFlags;
+    QRect m_normalGeo;
+    QWidget *m_normalParent;
 };
 //! [3]
 

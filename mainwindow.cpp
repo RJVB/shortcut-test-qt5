@@ -65,6 +65,10 @@
 #include "mainwindow.h"
 #include "qwidgetstyleselector.h"
 
+#ifdef Q_OS_MACOS
+#include <Carbon/Carbon.h>
+#endif
+
 static bool isMenubarMenu(const QMenu *m, bool checkIsNative=true)
 {   bool ret = false;
         static int level = -1;
@@ -119,6 +123,10 @@ MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBa
     qWarning() << Q_FUNC_INFO << "menuBar" << menuBar() << "native=" << menuBar()->isNativeMenuBar();
     qWarning() << "\tplatformName=" << QGuiApplication::platformName();
     qWarning() << "\tQt::AA_MacDontSwapCtrlAndMeta=" << qApp->testAttribute(Qt::AA_MacDontSwapCtrlAndMeta);;
+#endif
+
+#ifdef Q_OS_MACOS
+    setWindowFlags(windowFlags() & ~Qt::WindowFullscreenButtonHint);
 #endif
 
     QWidget *widget = new QWidget;
@@ -291,6 +299,43 @@ void MainWindow::center()
     infoLabel->setText(tr("Invoked <b>Edit|Format|Center</b>"));
 }
 
+void MainWindow::toggleFullScreen()
+{
+    m_normalParent = parentWidget();
+    if (fullScrAct->isChecked()) {
+        infoLabel->setText(tr("Invoked <b>Edit|Format|Fullscreen</b> (entering)"));
+        if (m_normalParent) {
+            m_normalFlags = m_normalParent->windowFlags();
+        } else {
+            m_normalFlags = windowFlags();
+        }
+        m_normalGeo = geometry();
+        // taken from qwidget_mac.mm, Qt 4.8.7
+        const QRect fullscreen(qApp->desktop()->screenGeometry(qApp->desktop()->screenNumber(this)));
+        setParent(m_normalParent, Qt::Window | Qt::FramelessWindowHint | (windowFlags() & 0xffff0000)); //save
+        setGeometry(fullscreen);
+#ifdef Q_OS_MACOS
+        if(!qApp->desktop()->screenNumber(this) && QGuiApplication::platformName() == QStringLiteral("cocoa")) {
+            SetSystemUIMode(kUIModeAllHidden, kUIOptionAutoShowMenuBar);
+        }
+#endif
+    } else {
+        infoLabel->setText(tr("Invoked <b>Edit|Format|Fullscreen</b> (exiting)"));
+        if (m_normalParent && m_normalParent == parentWidget()) {
+            setParent(m_normalParent, m_normalFlags);
+        } else {
+            setParent(parentWidget(), m_normalFlags);
+        }
+        setGeometry(m_normalGeo);
+#ifdef Q_OS_MACOS
+        if(!qApp->desktop()->screenNumber(this) && QGuiApplication::platformName() == QStringLiteral("cocoa")) {
+            SetSystemUIMode(kUIModeNormal, 0);
+        }
+#endif
+    }
+    show();
+}
+
 void MainWindow::setLineSpacing()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Format|Set Line Spacing</b>"));
@@ -442,6 +487,12 @@ void MainWindow::createActions()
     centerAct->setStatusTip(tr("Center the selected text"));
     connect(centerAct, &QAction::triggered, this, &MainWindow::center);
 
+    fullScrAct = new QAction(tr("&Fullscreen"), this);
+    fullScrAct->setCheckable(true);
+    fullScrAct->setShortcut(tr("F7"));
+    connect(fullScrAct, &QAction::triggered, this, &MainWindow::toggleFullScreen);
+
+
     shortCutAct = new QAction(tr("shortcut test"), this);
     shortCutAct->setShortcut(m_shortCut);
     connect(shortCutAct, &QAction::triggered, this, &MainWindow::shortCutActHandler);
@@ -557,6 +608,7 @@ void MainWindow::createMenus()
 //! [12]
     formatMenu = addMenu(tr("&Format"), editMenu);
     formatMenu->setTearOffEnabled(true);
+    formatMenu->addAction(fullScrAct);
     formatMenu->addSection(tr("Layout"));
     formatMenu->addAction(boldAct);
     formatMenu->addAction(italicAct);

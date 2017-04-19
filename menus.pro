@@ -9,6 +9,10 @@ SOURCES       = mainwindow.cpp \
                 qqmenu.cpp \
                 main.cpp
 
+mac {
+    LIBS += -framework Carbon
+}
+
 # install
 target.path = $$[QT_INSTALL_EXAMPLES]/widgets/mainwindows/menus
 INSTALLS += target
