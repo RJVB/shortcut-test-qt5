@@ -66,6 +66,8 @@ int main(int argc, char *argv[])
     QCommandLineParser commandLineParser;
     const QCommandLineOption noNativeMenuOption(QStringLiteral("no-native-menubar"),
                                                 QStringLiteral("do not use a native menubar"));
+    const QCommandLineOption r2LOption(QStringLiteral("right-to-left"),
+                                                QStringLiteral("activate the right-to-left layout mode"));
     const QCommandLineOption shortCutTestNoMenu(QStringLiteral("no-shortcut-test-in-menubar"),
                                                 QStringLiteral("do not add the shortcut test action to the menubar"));
     const QCommandLineOption shortCutTestNoContext(QStringLiteral("no-shortcut-test-in-contextmenu"),
@@ -74,6 +76,7 @@ int main(int argc, char *argv[])
                                                 QStringLiteral("the shortcut to test (read Ctrl for Command on Mac)"),
                                                 "shortcut", shortCut);
     commandLineParser.addOption(noNativeMenuOption);
+    commandLineParser.addOption(r2LOption);
     commandLineParser.addOption(shortCutTestNoMenu);
     commandLineParser.addOption(shortCutTestNoContext);
     commandLineParser.addOption(shortCutOption);
@@ -98,6 +101,10 @@ int main(int argc, char *argv[])
     if (commandLineParser.isSet(shortCutOption)) {
         shortCut = commandLineParser.value(shortCutOption);
     }
+    if (commandLineParser.isSet(r2LOption)) {
+        app.setLayoutDirection(Qt::RightToLeft);
+    }
+
     qWarning() << "Shortcut test action flags:" << shortCutActFlags;
 
     MainWindow window(shortCutActFlags, shortCut, nativeMenuBar);

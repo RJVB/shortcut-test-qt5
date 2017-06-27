@@ -304,36 +304,38 @@ void MainWindow::toggleFullScreen()
     m_normalParent = parentWidget();
     if (fullScrAct->isChecked()) {
         infoLabel->setText(tr("Invoked <b>Edit|Format|Fullscreen</b> (entering)"));
-        if (m_normalParent) {
-            m_normalFlags = m_normalParent->windowFlags();
-        } else {
-            m_normalFlags = windowFlags();
-        }
-        m_normalGeo = geometry();
-        // taken from qwidget_mac.mm, Qt 4.8.7
-        const QRect fullscreen(qApp->desktop()->screenGeometry(qApp->desktop()->screenNumber(this)));
-        setParent(m_normalParent, Qt::Window | Qt::FramelessWindowHint | (windowFlags() & 0xffff0000)); //save
-        setGeometry(fullscreen);
-#ifdef Q_OS_MACOS
-        if(!qApp->desktop()->screenNumber(this) && QGuiApplication::platformName() == QStringLiteral("cocoa")) {
-            SetSystemUIMode(kUIModeAllHidden, kUIOptionAutoShowMenuBar);
-        }
-#endif
+        showFullScreen();
+//         if (m_normalParent) {
+//             m_normalFlags = m_normalParent->windowFlags();
+//         } else {
+//             m_normalFlags = windowFlags();
+//         }
+//         m_normalGeo = geometry();
+//         // taken from qwidget_mac.mm, Qt 4.8.7
+//         const QRect fullscreen(qApp->desktop()->screenGeometry(qApp->desktop()->screenNumber(this)));
+//         setParent(m_normalParent, Qt::Window | Qt::FramelessWindowHint | (windowFlags() & 0xffff0000)); //save
+//         setGeometry(fullscreen);
+// #ifdef Q_OS_MACOS
+//         if(!qApp->desktop()->screenNumber(this) && QGuiApplication::platformName() == QStringLiteral("cocoa")) {
+//             SetSystemUIMode(kUIModeAllHidden, kUIOptionAutoShowMenuBar);
+//         }
+// #endif
     } else {
         infoLabel->setText(tr("Invoked <b>Edit|Format|Fullscreen</b> (exiting)"));
-        if (m_normalParent && m_normalParent == parentWidget()) {
-            setParent(m_normalParent, m_normalFlags);
-        } else {
-            setParent(parentWidget(), m_normalFlags);
-        }
-        setGeometry(m_normalGeo);
-#ifdef Q_OS_MACOS
-        if(!qApp->desktop()->screenNumber(this) && QGuiApplication::platformName() == QStringLiteral("cocoa")) {
-            SetSystemUIMode(kUIModeNormal, 0);
-        }
-#endif
+        showNormal();
+//         if (m_normalParent && m_normalParent == parentWidget()) {
+//             setParent(m_normalParent, m_normalFlags);
+//         } else {
+//             setParent(parentWidget(), m_normalFlags);
+//         }
+//         setGeometry(m_normalGeo);
+// #ifdef Q_OS_MACOS
+//         if(!qApp->desktop()->screenNumber(this) && QGuiApplication::platformName() == QStringLiteral("cocoa")) {
+//             SetSystemUIMode(kUIModeNormal, 0);
+//         }
+// #endif
     }
-    show();
+//     show();
 }
 
 void MainWindow::setLineSpacing()
