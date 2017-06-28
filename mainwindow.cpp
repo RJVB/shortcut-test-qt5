@@ -458,6 +458,8 @@ void MainWindow::createActions()
 
     aboutAct = new QAction(tr("&About"), this);
     aboutAct->setStatusTip(tr("Show the application's About box"));
+    aboutAct->setIcon(QIcon::fromTheme(QStringLiteral("help-info")));
+    aboutAct->setIconVisibleInMenu(true);
     connect(aboutAct, &QAction::triggered, this, &MainWindow::about);
 
     aboutQtAct = new QAction(tr("About &Qt"), this);
