@@ -1,6 +1,8 @@
 QT += widgets gui core
 # CONFIG -= app_bundle
 
+QMAKE_CXXFLAGS += $$QMAKE_CXXFLAGS_CXX11
+
 HEADERS       = qqmenu.h \
                 mainwindow.h \
                 qwidgetstyleselector.h
