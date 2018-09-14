@@ -24,6 +24,8 @@ class QString;
 
 // #define SET_MENUFONT
 
+#ifndef NO_QQMENU
+
 class QQMenu : public QMenu
 {
     Q_OBJECT
@@ -32,6 +34,8 @@ public:
     void addAction(QAction *action);
     QAction *addSection(const QString &title);
 };
+
+#endif
 
 #define QQMENU_H
 #endif

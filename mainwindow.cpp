@@ -269,6 +269,11 @@ void MainWindow::paste()
     infoLabel->setText(tr("Invoked <b>Edit|Paste</b>"));
 }
 
+void MainWindow::selectAll()
+{
+    infoLabel->setText(tr("Invoked <b>Edit|Select All</b>"));
+}
+
 void MainWindow::bold()
 {
     infoLabel->setText(tr("Invoked <b>Edit|Format|Bold</b>"));
@@ -425,6 +430,10 @@ void MainWindow::createActions()
     pasteAct->setStatusTip(tr("Paste the clipboard's contents into the current "
                               "selection"));
     connect(pasteAct, &QAction::triggered, this, &MainWindow::paste);
+
+    selectAllAct = new QAction(tr("Select &All"), this);
+    selectAllAct->setShortcuts(QKeySequence::SelectAll);
+    connect(selectAllAct, &QAction::triggered, this, &MainWindow::selectAll);
 
     boldAct = new QAction(tr("&Bold"), this);
     boldAct->setCheckable(true);
@@ -594,6 +603,7 @@ void MainWindow::createMenus()
     editMenu->addAction(copyAct);
     editMenu->addAction(pasteAct);
     editMenu->addSeparator();
+    editMenu->addAction(selectAllAct);
 
     helpMenu = addMenu(tr("&Help"));
     helpMenu->addSection(tr("Self Service"));

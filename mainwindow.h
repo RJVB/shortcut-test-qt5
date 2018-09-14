@@ -52,7 +52,15 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "qqmenu.h"
+
+// #define NO_QQMENU
+#ifndef NO_QQMENU
+#  include "qqmenu.h"
+#else
+#  include <QMenu>
+   using QQMenu = QMenu;
+#endif
+
 #include "qwidgetstyleselector.h"
 
 QT_BEGIN_NAMESPACE
@@ -88,6 +96,7 @@ private slots:
     void cut();
     void copy();
     void paste();
+    void selectAll();
     void bold();
     void italic();
     void leftAlign();
@@ -129,6 +138,7 @@ private:
     QAction *cutAct;
     QAction *copyAct;
     QAction *pasteAct;
+    QAction *selectAllAct;
     QAction *boldAct;
     QAction *italicAct;
     QAction *leftAlignAct;
