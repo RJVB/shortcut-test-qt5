@@ -106,8 +106,9 @@ done:;
 }
 
 //! [0]
-MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBar)
-    : m_nativeMenuBar(nativeMenuBar)
+MainWindow::MainWindow(int shortCutActFlags, QString shortCut, bool nativeMenuBar, QWidget *parent)
+    : QMainWindow(parent)
+    , m_nativeMenuBar(nativeMenuBar)
     , m_shortCutActFlags(shortCutActFlags)
     , m_shortCut(shortCut)
 {
@@ -227,6 +228,13 @@ void MainWindow::mousePressEvent(QMouseEvent *e)
 void MainWindow::newFile()
 {
     infoLabel->setText(tr("Invoked <b>File|New</b>"));
+}
+
+void MainWindow::newWindow()
+{
+    infoLabel->setText(tr("Invoked <b>File|New Window</b>"));
+    auto w = new MainWindow(m_shortCutActFlags, m_shortCut, m_nativeMenuBar, this);
+    w->show();
 }
 
 void MainWindow::open()
@@ -380,6 +388,10 @@ void MainWindow::createActions()
     newAct->setShortcuts(QKeySequence::New);
     newAct->setStatusTip(tr("Create a new file"));
     connect(newAct, &QAction::triggered, this, &MainWindow::newFile);
+
+    newWindowAct = new QAction(tr("New Window"), this);
+    newWindowAct->setStatusTip(tr("Create a new window"));
+    connect(newWindowAct, &QAction::triggered, this, &MainWindow::newWindow);
 //! [4]
 
     openAct = new QAction(tr("&Open..."), this);
@@ -401,7 +413,7 @@ void MainWindow::createActions()
     exitAct = new QAction(tr("E&xit"), this);
     exitAct->setShortcuts(QKeySequence::Quit);
     exitAct->setStatusTip(tr("Exit the application"));
-    connect(exitAct, &QAction::triggered, this, &QWidget::close);
+    connect(exitAct, &QAction::triggered, qApp, &QApplication::closeAllWindows);
 
     undoAct = new QAction(tr("&Undo"), this);
     undoAct->setShortcuts(QKeySequence::Undo);
@@ -588,6 +600,8 @@ void MainWindow::createMenus()
 //! [10]
     fileMenu->addAction(saveAct);
     fileMenu->addAction(printAct);
+    fileMenu->addSeparator();
+    fileMenu->addAction(newWindowAct);
 //! [11]
 //     fileMenu->addSeparator();
     fileMenu->addSection(tr("Danger"));

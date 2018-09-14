@@ -76,7 +76,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(int shortCutActFlags, QString shortCut="Ctrl+<", bool nativeMenuBar=true);
+    MainWindow(int shortCutActFlags, QString shortCut="Ctrl+<", bool nativeMenuBar=true, QWidget *parent = nullptr);
 
 protected:
 #ifndef QT_NO_CONTEXTMENU
@@ -88,6 +88,7 @@ protected:
 //! [1]
 private slots:
     void newFile();
+    void newWindow();
     void open();
     void save();
     void print();
@@ -129,6 +130,7 @@ private:
     QQMenu *contextMenu;
     QActionGroup *alignmentGroup;
     QAction *newAct;
+    QAction *newWindowAct;
     QAction *openAct;
     QAction *saveAct;
     QAction *printAct;
