@@ -53,7 +53,7 @@
 
 #include <QMainWindow>
 
-// #define NO_QQMENU
+#define NO_QQMENU
 #ifndef NO_QQMENU
 #  include "qqmenu.h"
 #else
