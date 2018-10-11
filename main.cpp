@@ -81,6 +81,8 @@ QQApplication::QQApplication(int &argc, char **argv)
             connect(sigHUPNotifier, &QSocketNotifier::activated, this, &QQApplication::handleHUP);
             qWarning() << Q_FUNC_INFO << sigHUPNotifier << "calls handleHUP via pipe" << sigHUPPipeRead << "on signal" << SIGHUP;
             signal(SIGHUP, &signalhandler);
+            signal(SIGINT, &signalhandler);
+            signal(SIGTERM, &signalhandler);
         }
     }
 }
@@ -98,7 +100,7 @@ QQApplication::~QQApplication()
 
 void QQApplication::signalhandler(int sig)
 {
-    if (sig == SIGHUP && theApp->sigHUPPipeWrite != -1) {
+    if (theApp->sigHUPPipeWrite != -1) {
         qCritical() << Q_FUNC_INFO << "signal" << sig << "received";
         write(theApp->sigHUPPipeWrite, &sig, sizeof(sig));
         qCritical() << Q_FUNC_INFO << "trigger sent.";
@@ -108,6 +110,9 @@ void QQApplication::signalhandler(int sig)
 void QQApplication::handleHUP(int sckt)
 {
     qCritical() << Q_FUNC_INFO << "called for pipe" << sckt;
+    int sig;
+    int n = read(theApp->sigHUPPipeRead, &sig, sizeof(sig));
+    qWarning() << "\tsignal" << sig << "read() returned" << n;
     sleep(3);
     qCritical() << Q_FUNC_INFO << "done.";
     close(sigHUPPipeRead);
