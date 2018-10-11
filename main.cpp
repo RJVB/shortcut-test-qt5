@@ -49,13 +49,72 @@
 ****************************************************************************/
 
 #include <QCoreApplication>
-#include <QApplication>
 #include <QCommandLineParser>
 #include <QString>
+#include <QSocketNotifier>
 
 #include <QDebug>
 
+#include "main.h"
 #include "mainwindow.h"
+
+QQApplication *QQApplication::theApp = nullptr;
+
+QQApplication::QQApplication(int &argc, char **argv)
+    : QApplication(argc, argv)
+{
+//         A "proper" exit-on-sigHUP approach:
+//         Open a pipe or an eventfd, then install your signal handler. In that signal 
+//         handler, write anything to the writing end or write uint64_t(1) the eventfd. 
+//         Create a QSocketNotifier on the reading end of the pipe or on the eventfd, 
+//         connect its activation signal to a slot that does what you want.
+
+    if (!theApp) {
+        int pp[2];
+        if (pipe(pp)) {
+            qErrnoWarning("Error opening SIGHUP handler pipe");
+        } else {
+            theApp = this;
+            sigHUPPipeRead = pp[0];
+            sigHUPPipeWrite = pp[1];
+            sigHUPNotifier = new QSocketNotifier(sigHUPPipeRead, QSocketNotifier::Read);
+            connect(sigHUPNotifier, &QSocketNotifier::activated, this, &QQApplication::handleHUP);
+            qWarning() << Q_FUNC_INFO << sigHUPNotifier << "calls handleHUP via pipe" << sigHUPPipeRead << "on signal" << SIGHUP;
+            signal(SIGHUP, &signalhandler);
+        }
+    }
+}
+
+QQApplication::~QQApplication()
+{
+    if (sigHUPPipeRead != -1) {
+        close(sigHUPPipeRead);
+    }
+    if (sigHUPPipeWrite != -1) {
+        close(sigHUPPipeWrite);
+    }
+    delete sigHUPNotifier;
+}
+
+void QQApplication::signalhandler(int sig)
+{
+    if (sig == SIGHUP && theApp->sigHUPPipeWrite != -1) {
+        qCritical() << Q_FUNC_INFO << "signal" << sig << "received";
+        write(theApp->sigHUPPipeWrite, &sig, sizeof(sig));
+        qCritical() << Q_FUNC_INFO << "trigger sent.";
+    }
+}
+
+void QQApplication::handleHUP(int sckt)
+{
+    qCritical() << Q_FUNC_INFO << "called for pipe" << sckt;
+    sleep(3);
+    qCritical() << Q_FUNC_INFO << "done.";
+    close(sigHUPPipeRead);
+    close(sigHUPPipeWrite);
+    sigHUPPipeRead = sigHUPPipeWrite = -1;
+    _exit(0);
+}
 
 int main(int argc, char *argv[])
 {
@@ -82,7 +141,7 @@ int main(int argc, char *argv[])
     commandLineParser.addOption(shortCutOption);
     commandLineParser.addHelpOption();
 
-    QApplication app(argc, argv);
+    QQApplication app(argc, argv);
 
     commandLineParser.process(app);
     if (commandLineParser.isSet(noNativeMenuOption)) {

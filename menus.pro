@@ -4,6 +4,7 @@ QT += widgets gui core
 QMAKE_CXXFLAGS += $$QMAKE_CXXFLAGS_CXX11
 
 HEADERS       = qqmenu.h \
+                main.h \
                 mainwindow.h \
                 qwidgetstyleselector.h
 SOURCES       = mainwindow.cpp \
