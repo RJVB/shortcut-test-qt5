@@ -51,7 +51,6 @@
 #include <QCoreApplication>
 #include <QCommandLineParser>
 #include <QString>
-#include <QSocketNotifier>
 
 #include <QDebug>
 
@@ -75,11 +74,16 @@ QQApplication::QQApplication(int &argc, char **argv)
             qErrnoWarning("Error opening SIGHUP handler pipe");
         } else {
             theApp = this;
+#ifdef USE_QSOCKETNOTIFIER
             sigHUPPipeRead = pp[0];
             sigHUPPipeWrite = pp[1];
             sigHUPNotifier = new QSocketNotifier(sigHUPPipeRead, QSocketNotifier::Read);
             connect(sigHUPNotifier, &QSocketNotifier::activated, this, &QQApplication::handleHUP);
-            qWarning() << Q_FUNC_INFO << sigHUPNotifier << "calls handleHUP via pipe" << sigHUPPipeRead << "on signal" << SIGHUP;
+            qWarning() << Q_FUNC_INFO << sigHUPNotifier << "calls handleHUP via pipe" << sigHUPPipeRead;
+#else
+            connect(this, &QQApplication::signalReceived, this, &QQApplication::handleHUP, Qt::QueuedConnection);
+            qWarning() << Q_FUNC_INFO << "handleHUP connected to signal signalReceived" << &QQApplication::signalReceived;
+#endif
             signal(SIGHUP, &signalhandler);
             signal(SIGINT, &signalhandler);
             signal(SIGTERM, &signalhandler);
@@ -89,6 +93,7 @@ QQApplication::QQApplication(int &argc, char **argv)
 
 QQApplication::~QQApplication()
 {
+#ifdef USE_QSOCKETNOTIFIER
     if (sigHUPPipeRead != -1) {
         close(sigHUPPipeRead);
     }
@@ -96,29 +101,46 @@ QQApplication::~QQApplication()
         close(sigHUPPipeWrite);
     }
     delete sigHUPNotifier;
+#endif
 }
 
 void QQApplication::signalhandler(int sig)
 {
+#ifdef USE_QSOCKETNOTIFIER
     if (theApp->sigHUPPipeWrite != -1) {
         qCritical() << Q_FUNC_INFO << "signal" << sig << "received";
+        theApp->m_signalReceived = sig;
         write(theApp->sigHUPPipeWrite, &sig, sizeof(sig));
         qCritical() << Q_FUNC_INFO << "trigger sent.";
     }
+#else
+   emit theApp->signalReceived(sig);
+#endif
 }
 
 void QQApplication::handleHUP(int sckt)
 {
+#ifdef USE_QSOCKETNOTIFIER
     qCritical() << Q_FUNC_INFO << "called for pipe" << sckt;
-    int sig;
-    int n = read(theApp->sigHUPPipeRead, &sig, sizeof(sig));
-    qWarning() << "\tsignal" << sig << "read() returned" << n;
+    qWarning() << "\tsignal" << m_signalReceived;
+#else
+    qCritical() << Q_FUNC_INFO << "called for signal" << sckt;
+#endif
     sleep(3);
     qCritical() << Q_FUNC_INFO << "done.";
+#ifdef USE_QSOCKETNOTIFIER
     close(sigHUPPipeRead);
     close(sigHUPPipeWrite);
     sigHUPPipeRead = sigHUPPipeWrite = -1;
-    _exit(0);
+//     _exit(0);
+    // re-raise signal with default handler and trigger program termination
+    signal(m_signalReceived, SIG_DFL);
+    raise(m_signalReceived);
+#else
+    // re-raise signal with default handler and trigger program termination
+    signal(sckt, SIG_DFL);
+    raise(sckt);
+#endif
 }
 
 int main(int argc, char *argv[])

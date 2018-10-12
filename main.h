@@ -56,7 +56,11 @@
 
 #include <QApplication>
 
-class QSocketNotifier;
+#undef USE_QSOCKETNOTIFIER
+
+#ifdef USE_QSOCKETNOTIFIER
+#include <QSocketNotifier>
+#endif
 
 class QQApplication : public QApplication
 {
@@ -65,14 +69,20 @@ public:
     explicit QQApplication(int &argc, char **argv);
     ~QQApplication();
 
+signals:
+   void signalReceived(int sig);
+
 private slots:
     void handleHUP(int sckt);
 
 private:
     static void signalhandler(int sig);
 
+#ifdef USE_QSOCKETNOTIFIER
     int sigHUPPipeRead = -1, sigHUPPipeWrite = -1;
     QSocketNotifier *sigHUPNotifier = nullptr;
+    int m_signalReceived;
+#endif
     static QQApplication *theApp;
 };
 
