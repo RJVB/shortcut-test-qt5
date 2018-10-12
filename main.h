@@ -65,14 +65,24 @@
 class QQApplication : public QApplication
 {
     Q_OBJECT
+
+#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+   typedef __sighandler_t InterruptSignalHandler;
+#else
+   typedef void (*InterruptSignalHandler)(int);
+#endif
+
 public:
     explicit QQApplication(int &argc, char **argv);
     ~QQApplication();
+#ifndef USE_QSOCKETNOTIFIER
+    InterruptSignalHandler catchInterruptSignal(int sig);
+#endif
 
 signals:
-   void signalReceived(int sig);
+   void interruptSignalReceived(int sig);
 
-private slots:
+public slots:
     void handleHUP(int sckt);
 
 private:

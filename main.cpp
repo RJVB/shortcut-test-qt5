@@ -73,23 +73,30 @@ QQApplication::QQApplication(int &argc, char **argv)
         if (pipe(pp)) {
             qErrnoWarning("Error opening SIGHUP handler pipe");
         } else {
-            theApp = this;
 #ifdef USE_QSOCKETNOTIFIER
+            theApp = this;
             sigHUPPipeRead = pp[0];
             sigHUPPipeWrite = pp[1];
             sigHUPNotifier = new QSocketNotifier(sigHUPPipeRead, QSocketNotifier::Read);
             connect(sigHUPNotifier, &QSocketNotifier::activated, this, &QQApplication::handleHUP);
             qWarning() << Q_FUNC_INFO << sigHUPNotifier << "calls handleHUP via pipe" << sigHUPPipeRead;
-#else
-            connect(this, &QQApplication::signalReceived, this, &QQApplication::handleHUP, Qt::QueuedConnection);
-            qWarning() << Q_FUNC_INFO << "handleHUP connected to signal signalReceived" << &QQApplication::signalReceived;
-#endif
             signal(SIGHUP, &signalhandler);
             signal(SIGINT, &signalhandler);
             signal(SIGTERM, &signalhandler);
+#endif
         }
     }
 }
+
+#ifndef USE_QSOCKETNOTIFIER
+QQApplication::InterruptSignalHandler QQApplication::catchInterruptSignal(int sig)
+{
+   if (!theApp) {
+      theApp = this;
+   }
+   return signal(sig, &signalhandler);
+}
+#endif
 
 QQApplication::~QQApplication()
 {
@@ -114,7 +121,7 @@ void QQApplication::signalhandler(int sig)
         qCritical() << Q_FUNC_INFO << "trigger sent.";
     }
 #else
-   emit theApp->signalReceived(sig);
+   emit theApp->interruptSignalReceived(sig);
 #endif
 }
 
@@ -169,6 +176,15 @@ int main(int argc, char *argv[])
     commandLineParser.addHelpOption();
 
     QQApplication app(argc, argv);
+#ifndef USE_QSOCKETNOTIFIER
+#ifdef SIGHUP
+   app.catchInterruptSignal(SIGHUP);
+#endif
+   app.catchInterruptSignal(SIGINT);
+   app.catchInterruptSignal(SIGTERM);
+   app.connect(&app, &QQApplication::interruptSignalReceived, &app, &QQApplication::handleHUP, Qt::QueuedConnection);
+   qWarning() << Q_FUNC_INFO << "handleHUP connected to signal interruptSignalReceived" << &QQApplication::interruptSignalReceived;
+#endif
 
     commandLineParser.process(app);
     if (commandLineParser.isSet(noNativeMenuOption)) {
