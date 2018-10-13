@@ -53,7 +53,6 @@
 
 #include <unistd.h>
 #include <signal.h>
-#include <semaphore.h>
 
 #include <QApplication>
 
@@ -62,6 +61,12 @@
 #ifdef USE_QSOCKETNOTIFIER
 #include <QSocketNotifier>
 #else
+#ifdef Q_OS_MACOS
+#include <mach/mach.h>
+typedef semaphore_t sem_t;
+#else
+#include <semaphore.h>
+#endif
 #include <QFuture>
 #endif
 
