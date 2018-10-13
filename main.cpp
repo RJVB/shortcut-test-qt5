@@ -57,7 +57,7 @@
 #include <QtConcurrent>
 #ifdef Q_OS_MACOS
 // Darwin doesn't have unnamed POSIX semaphores but can use MACH semaphores.
-#define sem_init(s, x, value)   semaphore_create(mach_task_self(), (s), SYNC_POLICY_FIFO, (value))
+#define sem_init(s,x,value)     semaphore_create(mach_task_self(), (s), SYNC_POLICY_FIFO, (value))
 #define sem_wait(s)             semaphore_wait(*(s))
 #define sem_post(s)             semaphore_signal(*(s))
 #define sem_destroy(s)          semaphore_destroy(mach_task_self(), *(s))
@@ -202,6 +202,8 @@ void QQApplication::handleHUP(int sckt)
    signal(m_signalReceived, SIG_DFL);
    raise(m_signalReceived);
 #else
+   sckt = m_signalReceived;
+   m_signalReceived = 0;
    if (m_monitorSignals) {
       m_monitorSignals = false;
       qWarning() << "\tsignalling signal monitor to exit";
