@@ -74,6 +74,7 @@ QQApplication *QQApplication::theApp = nullptr;
 QQApplication::QQApplication(int &argc, char **argv)
     : QApplication(argc, argv)
     , m_monitorSignals(false)
+    , m_signalReceived(0)
 {
 //         A "proper" exit-on-sigHUP approach:
 //         Open a pipe or an eventfd, then install your signal handler. In that signal 
@@ -115,12 +116,14 @@ QQApplication::InterruptSignalHandler QQApplication::catchInterruptSignal(int si
             qWarning() << Q_FUNC_INFO << "starting to monitor";
             while (m_monitorSignals && (((s = sem_wait(&m_sem)) == -1 && errno == EINTR) || s == 0)) {
                qWarning() << Q_FUNC_INFO << "signal:" << m_signalReceived;
-               if (s == 0) {
-                  emit theApp->interruptSignalReceived(sig);
-               } else {
-                  perror("sem_wait");
+               if (m_monitorSignals) {
+                  if (s == 0) {
+                     emit theApp->interruptSignalReceived(m_signalReceived);
+                  } else {
+                     perror("sem_wait");
+                  }
+                  qWarning() << "\tmonitor continues";
                }
-               qWarning() << "\tmonitor continues";
                continue;       /* Restart if interrupted by handler */
             }
             qWarning() << Q_FUNC_INFO << "monitor exitting";
@@ -172,8 +175,10 @@ void QQApplication::signalhandler(int sig)
       qCritical() << Q_FUNC_INFO << "trigger sent.";
    }
 #else
+   qCritical() << Q_FUNC_INFO << "signal" << sig << "received";
    if (theApp->m_monitorSignals) {
       sem_post(&theApp->m_sem);
+      qCritical() << Q_FUNC_INFO << "trigger sent.";
    }
 #endif
 }
@@ -197,6 +202,15 @@ void QQApplication::handleHUP(int sckt)
    signal(m_signalReceived, SIG_DFL);
    raise(m_signalReceived);
 #else
+   if (m_monitorSignals) {
+      m_monitorSignals = false;
+      qWarning() << "\tsignalling signal monitor to exit";
+      sem_post(&m_sem);
+   }
+   if (m_monitorHandle.isRunning()) {
+      qWarning() << "\twaiting for signal monitor to exit";
+      m_monitorHandle.waitForFinished();
+   }
    // re-raise signal with default handler and trigger program termination
    signal(sckt, SIG_DFL);
    raise(sckt);

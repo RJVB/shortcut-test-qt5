@@ -101,10 +101,11 @@ private:
     QSocketNotifier *sigHUPNotifier = nullptr;
 #else
     sem_t m_sem;
-    bool m_monitorSignals;
+    // std::atomic_bool would be fine but only if is_lock_free
+    sig_atomic_t m_monitorSignals;
     QFuture<void> m_monitorHandle;
 #endif
-    int m_signalReceived;
+    sig_atomic_t m_signalReceived;
     static QQApplication *theApp;
 };
 
