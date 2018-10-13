@@ -1,4 +1,4 @@
-QT += widgets gui core
+QT += widgets gui core concurrent
 # CONFIG -= app_bundle
 
 QMAKE_CXXFLAGS += $$QMAKE_CXXFLAGS_CXX11

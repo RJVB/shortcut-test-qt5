@@ -53,6 +53,7 @@
 
 #include <unistd.h>
 #include <signal.h>
+#include <semaphore.h>
 
 #include <QApplication>
 
@@ -60,6 +61,8 @@
 
 #ifdef USE_QSOCKETNOTIFIER
 #include <QSocketNotifier>
+#else
+#include <QFuture>
 #endif
 
 class QQApplication : public QApplication
@@ -91,8 +94,12 @@ private:
 #ifdef USE_QSOCKETNOTIFIER
     int sigHUPPipeRead = -1, sigHUPPipeWrite = -1;
     QSocketNotifier *sigHUPNotifier = nullptr;
-    int m_signalReceived;
+#else
+    sem_t m_sem;
+    bool m_monitorSignals;
+    QFuture<void> m_monitorHandle;
 #endif
+    int m_signalReceived;
     static QQApplication *theApp;
 };
 
