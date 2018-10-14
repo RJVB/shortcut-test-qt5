@@ -74,7 +74,7 @@ class QQApplication : public QApplication
 {
     Q_OBJECT
 
-#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+#if defined(Q_OS_LINUX)
    typedef __sighandler_t InterruptSignalHandler;
 #else
    typedef void (*InterruptSignalHandler)(int);
