@@ -113,7 +113,8 @@ QQApplication::InterruptSignalHandler QQApplication::catchInterruptSignal(int si
          m_monitorSignals = true;
          m_monitorHandle = QtConcurrent::run([=] (){
             int s;
-            qWarning() << Q_FUNC_INFO << "starting to monitor";
+            QThread::currentThread()->setObjectName(QStringLiteral("signal() monitor"));
+            qWarning() << Q_FUNC_INFO << "starting to monitor from thread" << QThread::currentThread();
             while (m_monitorSignals && (((s = sem_wait(&m_sem)) == -1 && errno == EINTR) || s == 0)) {
                qWarning() << Q_FUNC_INFO << "signal:" << m_signalReceived;
                if (m_monitorSignals) {
