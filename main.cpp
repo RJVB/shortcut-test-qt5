@@ -82,12 +82,12 @@ QQApplication::QQApplication(int &argc, char **argv)
 //         Create a QSocketNotifier on the reading end of the pipe or on the eventfd, 
 //         connect its activation signal to a slot that does what you want.
 
+#ifdef USE_QSOCKETNOTIFIER
     if (!theApp) {
         int pp[2];
         if (pipe(pp)) {
             qErrnoWarning("Error opening SIGHUP handler pipe");
         } else {
-#ifdef USE_QSOCKETNOTIFIER
             theApp = this;
             sigHUPPipeRead = pp[0];
             sigHUPPipeWrite = pp[1];
@@ -97,9 +97,9 @@ QQApplication::QQApplication(int &argc, char **argv)
             signal(SIGHUP, signalhandler);
             signal(SIGINT, signalhandler);
             signal(SIGTERM, signalhandler);
-#endif
         }
     }
+#endif
 }
 
 #ifndef USE_QSOCKETNOTIFIER
@@ -119,7 +119,7 @@ QQApplication::InterruptSignalHandler QQApplication::catchInterruptSignal(int si
                qWarning() << Q_FUNC_INFO << "signal:" << m_signalReceived;
                if (m_monitorSignals) {
                   if (s == 0) {
-                     emit theApp->interruptSignalReceived(m_signalReceived);
+                     emit interruptSignalReceived(m_signalReceived);
                   } else {
                      perror("sem_wait");
                   }
