@@ -60,7 +60,11 @@
 #define sem_wait(s)             semaphore_wait(*(s))
 #define sem_post(s)             semaphore_signal(*(s))
 #define sem_destroy(s)          semaphore_destroy(mach_task_self(), *(s))
+#define pthread_setname(t,n)    pthread_setname_np((n));
 #endif // Q_OS_MACOS
+#ifdef Q_OS_LINUX
+#define pthread_setname(t,n)    pthread_setname_np((t),(n));
+#endif
 #endif
 
 #include <QDebug>
@@ -104,7 +108,7 @@ QQApplication::QQApplication(int &argc, char **argv)
 #ifndef USE_QSOCKETNOTIFIER
 void* QQApplication::signalMonitor(void *arg)
 {
-    pthread_setname_np("signal monitor thread");
+    pthread_setname(pthread_self(), "signal monitor thread");
     QQApplication *that = static_cast<QQApplication*>(arg);
     that->signalMonitor();
     return nullptr;
@@ -127,7 +131,7 @@ void QQApplication::signalMonitor()
     }
     qWarning() << Q_FUNC_INFO << "monitor exitting";
     sem_destroy(&m_sem);
-    m_monitorThread = nullptr;
+    m_monitorThread = 0;
 }
 
 QQApplication::InterruptSignalHandler QQApplication::catchInterruptSignal(int sig)
@@ -140,6 +144,9 @@ QQApplication::InterruptSignalHandler QQApplication::catchInterruptSignal(int si
          m_monitorSignals = true;
          if (pthread_create(&m_monitorThread, nullptr, signalMonitor, this) == 0) {
              pthread_detach(m_monitorThread);
+         } else {
+             m_monitorThread = 0;
+             m_monitorSignals = false;
          }
       } else {
          qCritical() << "Couldn't create semaphore:" << strerror(errno);
