@@ -67,7 +67,7 @@ typedef semaphore_t sem_t;
 #else
 #include <semaphore.h>
 #endif
-#include <QFuture>
+#include <pthread.h>
 #endif
 
 class QQApplication : public QApplication
@@ -95,6 +95,10 @@ public slots:
 
 private:
     static void signalhandler(int sig);
+#ifndef USE_QSOCKETNOTIFIER
+    void signalMonitor();
+    static void* signalMonitor(void*);
+#endif
 
 #ifdef USE_QSOCKETNOTIFIER
     int sigHUPPipeRead = -1, sigHUPPipeWrite = -1;
@@ -103,7 +107,7 @@ private:
     sem_t m_sem;
     // std::atomic_bool would be fine but only if is_lock_free
     sig_atomic_t m_monitorSignals;
-    QFuture<void> m_monitorHandle;
+    pthread_t m_monitorThread;
 #endif
     sig_atomic_t m_signalReceived;
     static QQApplication *theApp;

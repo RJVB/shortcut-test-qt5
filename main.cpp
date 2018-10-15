@@ -54,7 +54,6 @@
 #include <QCommandLineParser>
 #include <QString>
 #ifndef USE_QSOCKETNOTIFIER
-#include <QtConcurrent>
 #ifdef Q_OS_MACOS
 // Darwin doesn't have unnamed POSIX semaphores but can use MACH semaphores.
 #define sem_init(s,x,value)     semaphore_create(mach_task_self(), (s), SYNC_POLICY_FIFO, (value))
@@ -103,6 +102,34 @@ QQApplication::QQApplication(int &argc, char **argv)
 }
 
 #ifndef USE_QSOCKETNOTIFIER
+void* QQApplication::signalMonitor(void *arg)
+{
+    pthread_setname_np("signal monitor thread");
+    QQApplication *that = static_cast<QQApplication*>(arg);
+    that->signalMonitor();
+    return nullptr;
+}
+
+void QQApplication::signalMonitor()
+{
+    int s;
+    while (m_monitorSignals && (((s = sem_wait(&m_sem)) == -1 && errno == EINTR) || s == 0)) {
+       qWarning() << Q_FUNC_INFO << "signal:" << m_signalReceived;
+       if (m_monitorSignals) {
+          if (s == 0) {
+             emit interruptSignalReceived(m_signalReceived);
+          } else {
+             perror("sem_wait");
+          }
+          qWarning() << "\tmonitor continues";
+       }
+       continue;       /* Restart if interrupted by handler */
+    }
+    qWarning() << Q_FUNC_INFO << "monitor exitting";
+    sem_destroy(&m_sem);
+    m_monitorThread = nullptr;
+}
+
 QQApplication::InterruptSignalHandler QQApplication::catchInterruptSignal(int sig)
 {
    if (!theApp) {
@@ -111,25 +138,9 @@ QQApplication::InterruptSignalHandler QQApplication::catchInterruptSignal(int si
    if (!m_monitorSignals) {
       if (sem_init(&m_sem, 0, 0) != -1) {
          m_monitorSignals = true;
-         m_monitorHandle = QtConcurrent::run([=] (){
-            int s;
-            QThread::currentThread()->setObjectName(QStringLiteral("signal() monitor"));
-            qWarning() << Q_FUNC_INFO << "starting to monitor from thread" << QThread::currentThread();
-            while (m_monitorSignals && (((s = sem_wait(&m_sem)) == -1 && errno == EINTR) || s == 0)) {
-               qWarning() << Q_FUNC_INFO << "signal:" << m_signalReceived;
-               if (m_monitorSignals) {
-                  if (s == 0) {
-                     emit interruptSignalReceived(m_signalReceived);
-                  } else {
-                     perror("sem_wait");
-                  }
-                  qWarning() << "\tmonitor continues";
-               }
-               continue;       /* Restart if interrupted by handler */
-            }
-            qWarning() << Q_FUNC_INFO << "monitor exitting";
-            sem_destroy(&m_sem);
-         });
+         if (pthread_create(&m_monitorThread, nullptr, signalMonitor, this) == 0) {
+             pthread_detach(m_monitorThread);
+         }
       } else {
          qCritical() << "Couldn't create semaphore:" << strerror(errno);
       }
@@ -154,15 +165,16 @@ QQApplication::~QQApplication()
    }
    delete sigHUPNotifier;
 #else
-   if (m_monitorSignals) {
-      m_monitorSignals = false;
-      qWarning() << "\tsignalling signal monitor to exit";
-      sem_post(&m_sem);
-   }
-   if (m_monitorHandle.isRunning()) {
-      qWarning() << "\twaiting for signal monitor to exit";
-      m_monitorHandle.waitForFinished();
-   }
+    if (m_monitorSignals) {
+        m_monitorSignals = false;
+        qWarning() << "\tsignalling signal monitor to exit";
+        sem_post(&m_sem);
+    }
+    if (m_monitorThread) {
+        void *dum;
+        qWarning() << "\twaiting for signal monitor to exit";
+        pthread_join(m_monitorThread, &dum);
+    }
 #endif
 }
 
@@ -203,20 +215,25 @@ void QQApplication::handleHUP(int sckt)
    signal(m_signalReceived, SIG_DFL);
    raise(m_signalReceived);
 #else
-   sckt = m_signalReceived;
-   m_signalReceived = 0;
-   if (m_monitorSignals) {
-      m_monitorSignals = false;
-      qWarning() << "\tsignalling signal monitor to exit";
-      sem_post(&m_sem);
-   }
-   if (m_monitorHandle.isRunning()) {
-      qWarning() << "\twaiting for signal monitor to exit";
-      m_monitorHandle.waitForFinished();
-   }
-   // re-raise signal with default handler and trigger program termination
-   signal(sckt, SIG_DFL);
-   raise(sckt);
+    sckt = m_signalReceived;
+    m_signalReceived = 0;
+    if (m_monitorSignals) {
+        m_monitorSignals = false;
+        qWarning() << "\tsignalling signal monitor to exit";
+        sem_post(&m_sem);
+    }
+    if (m_monitorThread) {
+        qWarning() << "\twaiting for signal monitor to exit";
+        errno = 0;
+        void *dum = NULL;
+        if (auto ret = pthread_join(m_monitorThread, &dum)) {
+            qCritical() << "\tpthread_join returned" << ret
+                 << "dum=" << dum << ":" << strerror(errno);
+        }
+    }
+    // re-raise signal with default handler and trigger program termination
+    signal(sckt, SIG_DFL);
+    raise(sckt);
 #endif
 }
 
