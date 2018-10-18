@@ -6,11 +6,15 @@ QMAKE_CXXFLAGS += $$QMAKE_CXXFLAGS_CXX11
 HEADERS       = qqmenu.h \
                 main.h \
                 mainwindow.h \
-                qwidgetstyleselector.h
+                qwidgetstyleselector.h \
+                qqnativesemaphore.h
 SOURCES       = mainwindow.cpp \
                 qwidgetstyleselector.cpp \
                 qqmenu.cpp \
                 main.cpp
+unix {
+    SOURCES += qqnativesemaphore_unix.cpp
+}
 
 mac {
     LIBS += -framework Carbon

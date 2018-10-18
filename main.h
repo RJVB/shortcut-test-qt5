@@ -61,13 +61,7 @@
 #ifdef USE_QSOCKETNOTIFIER
 #include <QSocketNotifier>
 #else
-#ifdef Q_OS_MACOS
-#include <mach/mach.h>
-typedef semaphore_t sem_t;
-#else
-#include <semaphore.h>
-#endif
-#include <pthread.h>
+class QQNativeSemaphore;
 #endif
 
 class QQApplication : public QApplication
@@ -91,7 +85,8 @@ signals:
    void interruptSignalReceived(int sig);
 
 public slots:
-    void handleHUP(int sckt);
+    void handleHUP_int(int sckt);
+    void handleHUP_qvar(QVariant sig);
 
 private:
     static void signalhandler(int sig);
@@ -104,10 +99,7 @@ private:
     int sigHUPPipeRead = -1, sigHUPPipeWrite = -1;
     QSocketNotifier *sigHUPNotifier = nullptr;
 #else
-    sem_t m_sem;
-    // std::atomic_bool would be fine but only if is_lock_free
-    sig_atomic_t m_monitorSignals;
-    pthread_t m_monitorThread;
+    QQNativeSemaphore *m_sem;
 #endif
     sig_atomic_t m_signalReceived;
     static QQApplication *theApp;
