@@ -130,8 +130,6 @@ void QQApplication::signalMonitor()
        continue;       /* Restart if interrupted by handler */
     }
     qWarning() << Q_FUNC_INFO << "monitor exitting";
-    sem_destroy(&m_sem);
-    m_monitorThread = 0;
 }
 
 QQApplication::InterruptSignalHandler QQApplication::catchInterruptSignal(int sig)
@@ -176,11 +174,7 @@ QQApplication::~QQApplication()
         m_monitorSignals = false;
         qWarning() << "\tsignalling signal monitor to exit";
         sem_post(&m_sem);
-    }
-    if (m_monitorThread) {
-        void *dum;
-        qWarning() << "\twaiting for signal monitor to exit";
-        pthread_join(m_monitorThread, &dum);
+        sem_destroy(&m_sem);
     }
 #endif
 }
@@ -228,15 +222,7 @@ void QQApplication::handleHUP(int sckt)
         m_monitorSignals = false;
         qWarning() << "\tsignalling signal monitor to exit";
         sem_post(&m_sem);
-    }
-    if (m_monitorThread) {
-        qWarning() << "\twaiting for signal monitor to exit";
-        errno = 0;
-        void *dum = NULL;
-        if (auto ret = pthread_join(m_monitorThread, &dum)) {
-            qCritical() << "\tpthread_join returned" << ret
-                 << "dum=" << dum << ":" << strerror(errno);
-        }
+        sem_destroy(&m_sem);
     }
     // re-raise signal with default handler and trigger program termination
     signal(sckt, SIG_DFL);
