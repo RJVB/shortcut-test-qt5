@@ -174,7 +174,7 @@ void QQApplication::handleHUP_int(int sckt)
     sckt = m_signalReceived;
     m_signalReceived = 0;
     if (m_sem->isEnabled()) {
-        qWarning() << "\tsignalling signal monitor to exit";
+        qWarning() << "\tdeactivating signal monitor";
         m_sem->setEnabled(false);
     }
     // re-raise signal with default handler and trigger program termination

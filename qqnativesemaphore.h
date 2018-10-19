@@ -18,6 +18,26 @@ typedef semaphore_t sem_t;
 #include <atomic>
 #include <csignal>
 
+/**
+ * QQNativeSemaphore : a thin wrapper around platform-native semaphores.
+ *
+ * Each instance sets up a single semaphore when enabled and spawns a thread
+ * that waits on the semaphore. When the semaphore is released/signalled (the
+ * wait ends) the QQNativeSemaphore::triggered signal is emitted and the instance
+ * rearms itself. Releasing (triggering) the semaphore is done with the
+ * QQNativeSemaphore::trigger() method.
+ *
+ * POSIX semaphores emulate a queue; they lock when empty and become (remain)
+ * unlicked as long as they are not empty. The initial value is thus equivalent
+ * to an amount or resources that can be spent before locking.
+ * QQNativeSemaphore adopts the opposite approach: its initial value represents
+ * the number of triggers that must be sent in order to unlock the semaphore (and
+ * emit the triggered signal).
+ *
+ * Care has been taken to consume as little resources as possible (including open
+ * file descriptors), and that QQNativeSemaphore::trigger() is safe to be called
+ * in async signal handlers.
+ */
 class QQNativeSemaphore : public QObject
 {
    Q_OBJECT
@@ -46,9 +66,23 @@ public:
     }
 
 Q_SIGNALS:
+    /**
+     * signal sent when the semaphore triggers (unlocks)
+     *
+     * @p val arbitrary valueset through QQNativeSemaphore::trigger().
+     */
     void triggered(QVariant val);
 
 public Q_SLOTS:
+    /**
+     * Decrease the current value by one; when zero is reached
+     * the internal semaphore is released and the triggered() signal is sent.
+     *
+     * @p val an arbitrary value that will be sent out with the trigger signal.
+     * Note that this feature is not thread or signal safe; when multiple calls
+     * are made to trigger() before the monitor thread has had a chance to send
+     * signal out the last value will be sent with the signal.
+     */
     bool trigger(QVariant val = QVariant());
 
 private:

@@ -2,6 +2,8 @@
 
 #include <QDebug>
 
+#include <errno.h>
+
 #ifdef Q_OS_MACOS
 // Darwin doesn't have unnamed POSIX semaphores but can use MACH semaphores.
 #define sem_init(s,x,value)     semaphore_create(mach_task_self(), (s), SYNC_POLICY_FIFO, (value))
