@@ -32,9 +32,8 @@ QQNativeSemaphore::~QQNativeSemaphore()
 
 bool QQNativeSemaphore::setEnabled(bool enabled)
 {
-    if (enabled) {
+    if (enabled && !m_monitorEnabled.exchange(true)) {
         if (sem_init(&m_sem, 0, 0) != -1) {
-            m_monitorEnabled = true;
             if (pthread_create(&m_monitorThread, nullptr, monitorStarter, this) == 0) {
                 pthread_detach(m_monitorThread);
             } else {
@@ -43,10 +42,11 @@ bool QQNativeSemaphore::setEnabled(bool enabled)
                 sem_destroy(&m_sem);
             }
         } else {
+            // we failed, so turn back off
+            m_monitorEnabled = false;
             qCritical() << this << "couldn't create semaphore:" << strerror(errno);
         }
-    } else if (m_monitorEnabled) {
-        m_monitorEnabled = false;
+    } else if (m_monitorEnabled.exchange(false)) {
         qWarning() << "\tsignalling semaphore monitor to exit";
         sem_post(&m_sem);
         sem_destroy(&m_sem);
@@ -89,8 +89,7 @@ bool QQNativeSemaphore::trigger(QVariant val)
 {
     m_triggerValue = val;
     if (m_monitorEnabled) {
-        if (m_currentValue > 0) {
-            m_currentValue -= 1;
+        if (m_currentValue.fetch_sub(1) >= 1) {
             return false;
         } else {
             sem_post(&m_sem);
