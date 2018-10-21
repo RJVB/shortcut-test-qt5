@@ -16,40 +16,62 @@
 #define pthread_setname(t,n)    pthread_setname_np((t),(n));
 #endif
 
-QQNativeSemaphore::QQNativeSemaphore::QQNativeSemaphore(bool enabled, int initialValue, QObject* parent)
+QQNativeSemaphore::QQNativeSemaphore::QQNativeSemaphore(bool enabled, bool nativeMode, int initialValue, QObject* parent)
     : QObject(parent)
     , m_triggerValue(QVariant())
+    , m_nativeMode(nativeMode)
+    , m_hasSemaphore(false)
     , m_monitorEnabled(false)
     , m_currentValue(initialValue)
 {
+    if (m_nativeMode) {
+        if (sem_init(&m_sem, 0, initialValue) != -1) {
+            m_hasSemaphore = true;
+        }
+    }
     setEnabled(enabled);
 }
 
 QQNativeSemaphore::~QQNativeSemaphore()
 {
-    setEnabled(false);
+    if (m_nativeMode) {
+        if (m_hasSemaphore) {
+            m_monitorEnabled = false;
+            sem_post(&m_sem);
+            sem_destroy(&m_sem);
+        }
+    } else {
+        setEnabled(false);
+    }
 }
 
 bool QQNativeSemaphore::setEnabled(bool enabled)
 {
-    if (enabled && !m_monitorEnabled.exchange(true)) {
+    bool ret = true;
+    if (m_nativeMode) {
+        m_monitorEnabled = enabled && m_hasSemaphore;
+    } else if (enabled && !m_monitorEnabled.exchange(true)) {
         if (sem_init(&m_sem, 0, 0) != -1) {
             if (pthread_create(&m_monitorThread, nullptr, monitorStarter, this) == 0) {
+                m_hasSemaphore = true;
                 pthread_detach(m_monitorThread);
             } else {
                 m_monitorThread = 0;
                 m_monitorEnabled = false;
+                ret = false;
                 sem_destroy(&m_sem);
             }
         } else {
             // we failed, so turn back off
             m_monitorEnabled = false;
             qCritical() << this << "couldn't create semaphore:" << strerror(errno);
+            ret = false;
         }
     } else if (m_monitorEnabled.exchange(false)) {
         qWarning() << "\tsignalling semaphore monitor to exit";
         sem_post(&m_sem);
         sem_destroy(&m_sem);
+        m_hasSemaphore = false;
     }
     return true;
 }
@@ -97,3 +119,68 @@ bool QQNativeSemaphore::trigger(QVariant val)
     }
     return m_monitorEnabled;
 }
+
+bool QQNativeSemaphore::wait(QVariant val, bool checkFirst)
+{
+    bool ret = false;
+    if (m_nativeMode && m_hasSemaphore && m_monitorEnabled) {
+        int curVal;
+        if (sem_getvalue(&m_sem, &curVal) == 0) {
+            errno = 0;
+            if (checkFirst) {
+                int wval = sem_trywait(&m_sem);
+                // errno will be EGAIN if the semaphore is already locked.
+                ret = (wval == 0) && (errno == 0);
+            } else {
+                ret = (sem_wait(&m_sem) == 0) && (errno != EINTR);
+            }
+        }
+    }
+    if (ret) {
+        qWarning() << Q_FUNC_INFO << "semaphore triggered with" << val;
+        emit triggered(val);
+    }
+    return ret;
+}
+
+#ifdef Q_OS_MACOS
+// from https://raw.githubusercontent.com/tumi8/vermont/master/src/osdep/osx/sem_timedwait.cpp
+int QQNativeSemaphore::sem_timedwait(sem_t *sem, const struct timespec *timeout)
+{
+    int ret = -1;
+    switch (semaphore_timedwait(*sem, mts)) {
+        case KERN_SUCCESS:
+            ret = 0;
+        case KERN_OPERATION_TIMED_OUT:
+            errno = ETIMEDOUT;
+            break;
+        case KERN_ABORTED:
+            errno = EINTR;
+            break;
+        default:
+            errno =  EINVAL;
+            break;
+    }
+    return -1;
+}
+#endif
+
+bool QQNativeSemaphore::timedWait(QVariant val, double timeOut)
+{
+    bool ret;
+    if (m_nativeMode && m_hasSemaphore && m_monitorEnabled) {
+        struct timespec ts;
+        ts.tv_sec = time_t(timeOut);
+        ts.tv_nsec = long((timeOut - ts.tv_sec) * 1e9);
+        errno = 0;
+        ret = (sem_timedwait(&m_sem, &ts) == 0) && (errno != EINTR) && (errno != ETIMEDOUT);
+    } else {
+        ret = false;
+    }
+    if (ret) {
+        qWarning() << Q_FUNC_INFO << "semaphore triggered with" << val;
+        emit triggered(val);
+    }
+    return ret;
+}
+

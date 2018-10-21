@@ -42,13 +42,35 @@ class QQNativeSemaphore : public QObject
 {
    Q_OBJECT
 public:
-    QQNativeSemaphore(bool enabled = false, int initialValue = 0, QObject *parent = nullptr);
+    QQNativeSemaphore(bool enabled = false, bool nativeMode = false, int initialValue = 0, QObject *parent = nullptr);
+    /**
+     * releases all the resources used by this instance. In native mode
+     * this unlocks the internal native semaphore which means ongoing
+     * waits are unblocked.
+     */
     virtual ~QQNativeSemaphore();
 
+    /**
+     * Enable or disable the QQNativeSemaphore instance.
+     * In native mode this just toggles a flag without affecting
+     * waits that are currently ongoing (and which cannot be unblocked
+     * until the semaphore is reactivated). In non-native mode this
+     * takes down the monitoring thread and the internal native semaphore
+     * (but without sending a signal).
+     */
     bool setEnabled(bool enabled);
     bool isEnabled() const
     {
         return m_monitorEnabled;
+    }
+    /**
+     * Returns true if this instance is in non-native mode
+     * or else if it has a valid, initialised semaphore.
+     * Note that a valid QQNativeSemaphore can be inactive (disabled)!
+     */
+    bool isValid() const
+    {
+        return m_hasSemaphore || !m_nativeMode;
     }
 
     int value() const
@@ -65,11 +87,18 @@ public:
         return false;
     }
 
+    /**
+     * returns true after a blocking wait and will have emitted the
+     * triggered(@p val) signal in that case.
+     */
+    bool wait(QVariant val, bool checkFirst = false);
+    bool timedWait(QVariant val, double timeOut);
+
 Q_SIGNALS:
     /**
      * signal sent when the semaphore triggers (unlocks)
      *
-     * @p val arbitrary valueset through QQNativeSemaphore::trigger().
+     * @p val arbitrary value set through QQNativeSemaphore::trigger().
      */
     void triggered(QVariant val);
 
@@ -89,6 +118,12 @@ private:
     QVariant m_triggerValue;
     void semaphoreMonitor();
     static void *monitorStarter(void*);
+#ifdef Q_OS_MACOS
+    int sem_timedwait(sem_t *sem, const struct timespec *abs_timeout);
+#endif
+
+    bool m_nativeMode;
+    bool m_hasSemaphore;
 
 #ifdef Q_OS_UNIX
     sem_t m_sem;
