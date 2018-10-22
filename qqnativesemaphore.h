@@ -18,6 +18,13 @@ typedef semaphore_t sem_t;
 #include <atomic>
 #include <csignal>
 
+#if defined(ATOMIC_BOOL_LOCK_FREE) && defined(ATOMIC_INT_LOCK_FREE)
+#define QQNATIVESEMAPHORE_LOCK_FREE
+#else
+#undef QQNATIVESEMAPHORE_LOCK_FREE
+#endif
+
+
 /**
  * QQNativeSemaphore : a thin wrapper around platform-native semaphores.
  *
@@ -36,7 +43,8 @@ typedef semaphore_t sem_t;
  *
  * Care has been taken to consume as little resources as possible (including open
  * file descriptors), and that QQNativeSemaphore::trigger() is safe to be called
- * in async signal handlers.
+ * in async signal handlers (on platforms here std::atomic_bool and std::atomic_int
+ * are lock free).
  */
 class QQNativeSemaphore : public QObject
 {
@@ -78,33 +86,59 @@ public:
         return m_currentValue;
     }
 
-    bool setValue(int val)
+//     bool setValue(int val)
+//     {
+//         if (val >= 0) {
+//             m_currentValue = val;
+//             return true;
+//         }
+//         return false;
+//     }
+
+    /**
+     * Returns true if QQNativeSemaphore is lock free.
+     * See also the QQNATIVESEMAPHORE_LOCK_FREE macro.
+     */
+    static bool is_lock_free()
     {
-        if (val >= 0) {
-            m_currentValue = val;
-            return true;
-        }
+#ifdef QQNATIVESEMAPHORE_LOCK_FREE
+        return true;
+#else
         return false;
+#endif
     }
 
     /**
-     * returns true after a blocking wait and will have emitted the
-     * triggered(@p val) signal in that case.
+     * Native mode only.
+     * Returns true after a blocking wait and will have emitted the
+     * triggered(@p val) signal in that case. The argument passed
+     * with the signal can be set through the call to QQNativeSemaphore::trigger()
+     * which unlocks the semaphore, or through this function (which takes
+     * precedence).
+     * @p checkFirst : return true if the operation would block but do not
+     * actually block.
      */
-    bool wait(QVariant val, bool checkFirst = false);
-    bool timedWait(QVariant val, double timeOut);
+    bool wait(bool checkFirst = false, QVariant val = QVariant());
+    /**
+     * As QQNativeSemaphore::wait() but with a timeout (in seconds).
+     */
+    bool timedWait(double timeOut, QVariant val = QVariant());
 
 Q_SIGNALS:
     /**
      * signal sent when the semaphore triggers (unlocks)
      *
-     * @p val arbitrary value set through QQNativeSemaphore::trigger().
+     * @p val arbitrary value set through QQNativeSemaphore::trigger()
+     * or QQNativeSemaphore::wait()/timedWait() (in native mode).
      */
     void triggered(QVariant val);
 
 public Q_SLOTS:
     /**
-     * Decrease the current value by one; when zero is reached
+     * Native mode:
+     * INCREASE the semaphore, unlocking if it was locked.
+     * Non-native (trigger) mode:
+     * DECREASE the current value by one; when zero is reached
      * the internal semaphore is released and the triggered() signal is sent.
      *
      * @p val an arbitrary value that will be sent out with the trigger signal.
@@ -128,17 +162,8 @@ private:
 #ifdef Q_OS_UNIX
     sem_t m_sem;
 #endif
-    // std::atomic_bool would be fine but only if is_lock_free
-#ifdef ATOMIC_BOOL_LOCK_FREE
     std::atomic_bool m_monitorEnabled;
-#else
-    sig_atomic_t m_monitorEnabled;
-#endif
-#ifdef ATOMIC_INT_LOCK_FREE
     std::atomic_int m_currentValue;
-#else
-    sig_atomic_t m_currentValue;
-#endif
     pthread_t m_monitorThread;
 };
 

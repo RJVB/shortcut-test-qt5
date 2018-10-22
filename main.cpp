@@ -104,7 +104,7 @@ QQApplication::InterruptSignalHandler QQApplication::catchInterruptSignal(int si
       theApp = this;
    }
    if (!m_sem) {
-       m_sem = new QQNativeSemaphore(false, 1);
+       m_sem = new QQNativeSemaphore(false, false, 1);
        m_sem->setObjectName(QStringLiteral("signal monitor"));
        connect(m_sem, &QQNativeSemaphore::triggered, this, &QQApplication::handleHUP_qvar, Qt::BlockingQueuedConnection);
        m_sem->setEnabled(true);

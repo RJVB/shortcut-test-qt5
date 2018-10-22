@@ -94,9 +94,9 @@ void QQNativeSemaphore::semaphoreMonitor()
     while (m_monitorEnabled && (((s = sem_wait(&m_sem)) == -1 && errno == EINTR) || s == 0)) {
         if (m_monitorEnabled) {
             if (s == 0) {
-                m_currentValue = 0;
                 qWarning() << Q_FUNC_INFO << "semaphore triggered with" << m_triggerValue;
                 emit triggered(m_triggerValue);
+                m_triggerValue = QVariant();
             } else {
                 perror("sem_wait");
             }
@@ -110,35 +110,45 @@ void QQNativeSemaphore::semaphoreMonitor()
 bool QQNativeSemaphore::trigger(QVariant val)
 {
     m_triggerValue = val;
+    bool ret = false;
     if (m_monitorEnabled) {
-        if (m_currentValue.fetch_sub(1) >= 1) {
-            return false;
-        } else {
+        if (m_nativeMode) {
+            m_currentValue += 1;
             sem_post(&m_sem);
+            ret = true;
+        } else {
+            if (m_currentValue.fetch_sub(1) == 0) {
+                sem_post(&m_sem);
+                ret = true;
+            }
         }
     }
-    return m_monitorEnabled;
+    return ret;
 }
 
-bool QQNativeSemaphore::wait(QVariant val, bool checkFirst)
+bool QQNativeSemaphore::wait(bool checkFirst, QVariant val)
 {
-    bool ret = false;
+    bool ret = false, waited = false;
     if (m_nativeMode && m_hasSemaphore && m_monitorEnabled) {
-        int curVal;
-        if (sem_getvalue(&m_sem, &curVal) == 0) {
+        if (m_currentValue.fetch_sub(1) == 0) {
             errno = 0;
             if (checkFirst) {
-                int wval = sem_trywait(&m_sem);
-                // errno will be EGAIN if the semaphore is already locked.
-                ret = (wval == 0) && (errno == 0);
+                ret = true;
+                errno = EAGAIN;
             } else {
-                ret = (sem_wait(&m_sem) == 0) && (errno != EINTR);
+                ret = (sem_wait(&m_sem) == 0);
+                waited = (errno != EINTR);
+                ret &= waited;
             }
         }
     }
     if (ret) {
-        qWarning() << Q_FUNC_INFO << "semaphore triggered with" << val;
-        emit triggered(val);
+        if (val.isValid()) {
+            m_triggerValue = val;
+        }
+        qWarning() << Q_FUNC_INFO << "semaphore triggered with" << m_triggerValue;
+        emit triggered(m_triggerValue);
+        m_triggerValue = QVariant();
     }
     return ret;
 }
@@ -148,6 +158,9 @@ bool QQNativeSemaphore::wait(QVariant val, bool checkFirst)
 int QQNativeSemaphore::sem_timedwait(sem_t *sem, const struct timespec *timeout)
 {
     int ret = -1;
+    struct mach_timespec mts;
+    mts.tv_sec = timeout->tv_sec;
+    mts.tv_nsec = timeout->tv_nsec;
     switch (semaphore_timedwait(*sem, mts)) {
         case KERN_SUCCESS:
             ret = 0;
@@ -165,21 +178,29 @@ int QQNativeSemaphore::sem_timedwait(sem_t *sem, const struct timespec *timeout)
 }
 #endif
 
-bool QQNativeSemaphore::timedWait(QVariant val, double timeOut)
+bool QQNativeSemaphore::timedWait(double timeOut, QVariant val)
 {
-    bool ret;
+    bool ret = false, waited = false;
     if (m_nativeMode && m_hasSemaphore && m_monitorEnabled) {
-        struct timespec ts;
-        ts.tv_sec = time_t(timeOut);
-        ts.tv_nsec = long((timeOut - ts.tv_sec) * 1e9);
-        errno = 0;
-        ret = (sem_timedwait(&m_sem, &ts) == 0) && (errno != EINTR) && (errno != ETIMEDOUT);
-    } else {
-        ret = false;
+        if (m_currentValue.fetch_sub(1) == 0) {
+            struct timespec ts;
+            ts.tv_sec = time_t(timeOut);
+            ts.tv_nsec = long((timeOut - ts.tv_sec) * 1e9);
+            errno = 0;
+            ret = (sem_timedwait(&m_sem, &ts) == 0);
+            waited = (errno != EINTR) && (errno != ETIMEDOUT);
+            ret &= waited;
+            // it is not entirely clear if we should restore (re-increment)
+            // m_currentValue if the wait timed out?
+        }
     }
     if (ret) {
-        qWarning() << Q_FUNC_INFO << "semaphore triggered with" << val;
+        if (val.isValid()) {
+            m_triggerValue = val;
+        }
+        qWarning() << Q_FUNC_INFO << "semaphore triggered with" << m_triggerValue;
         emit triggered(val);
+        m_triggerValue = QVariant();
     }
     return ret;
 }
